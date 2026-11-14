@@ -1,2 +1,12 @@
 {
+  "dsh-hello-world": [
+    {
+      "version": "0.1.0",
+      "publishTimestamp": 1794677264,
+      "engines": {
+        "dsh": ">=0.2.2-rc.1 <0.3.0-0"
+      },
+      "commit": "72db1e8ab019021dff722513762489e34af40f9f"
+    }
+  ]
 }
