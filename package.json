@@ -1,0 +1,16 @@
+{
+  "name": "dsh-internal-market",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "公司内部 DSH 插件市场：私有插件索引 + 内部插件包，不发布到公共市场。",
+  "scripts": {
+    "build": "node scripts/build-index.mjs",
+    "check": "node scripts/build-index.mjs --check",
+    "serve": "node scripts/serve.mjs",
+    "pack:hello": "pnpm --dir plugins/dsh-hello-world pack"
+  },
+  "devDependencies": {
+    "@deepseek-ai/dsh-plugin-market-index": "0.2.2-rc.3"
+  }
+}

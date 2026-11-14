@@ -1,0 +1,39 @@
+{
+  "name": "dsh-hello-world",
+  "version": "0.1.0",
+  "description": "公司内部示例插件：在左侧栏新增一个独立标签，点击后主区域显示居中的 hello world。",
+  "license": "MIT",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "cordis.patch.yml",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18",
+    "dsh": ">=0.2.2-rc.1 <0.3.0-0"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-layout"
+      ]
+    }
+  },
+  "author": "internal-platform",
+  "repository": {
+    "type": "git",
+    "url": "git+https://git.internal.example.com/dsh/dsh-hello-world.git"
+  }
+}

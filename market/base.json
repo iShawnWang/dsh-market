@@ -1,0 +1,24 @@
+{
+  "format": 1,
+  "title": {
+    "en": "Internal DSH Plugins",
+    "zh-cn": "公司内部 DSH 插件"
+  },
+  "description": {
+    "en": "Plugins released by the internal platform team. Not published to any public market.",
+    "zh-cn": "内部平台团队发布的插件，不发布到任何公共市场。"
+  },
+  "metadata": {
+    "categories": {
+      "platform": { "title": { "en": "Platform", "zh-cn": "平台" } },
+      "tools": { "title": { "en": "Tools", "zh-cn": "工具" } }
+    },
+    "labels": {
+      "internal": { "title": { "en": "Internal", "zh-cn": "内部" } },
+      "experimental": { "title": { "en": "Experimental", "zh-cn": "实验" } }
+    },
+    "sortKeys": {
+      "updated": { "title": { "en": "Recently updated", "zh-cn": "最近更新" }, "order": "desc" }
+    }
+  }
+}

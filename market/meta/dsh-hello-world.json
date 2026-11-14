@@ -1,0 +1,15 @@
+{
+  "title": { "en": "Hello World", "zh-cn": "Hello World 示例" },
+  "description": {
+    "en": "Internal sample plugin: adds a sidebar tab that shows a centered hello world.",
+    "zh-cn": "公司内部示例插件：在左侧新增一个标签，点击后主区域居中显示 hello world。"
+  },
+  "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iOCIgc3Ryb2tlPSIjN0M4Q0Y4IiBzdHJva2Utd2lkdGg9IjEuNiIvPjxwYXRoIGQ9Ik04LjYgMTJoNi44TTEyIDguNnY2LjgiIHN0cm9rZT0iIzdDOENGOCIgc3Ryb2tlLXdpZHRoPSIxLjYiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjwvc3ZnPg==",
+  "category": "platform",
+  "labels": ["internal"],
+  "keywords": ["demo", "sample"],
+  "repository": {
+    "url": "https://git.internal.example.com/dsh/dsh-hello-world",
+    "directory": "plugins/dsh-hello-world"
+  }
+}

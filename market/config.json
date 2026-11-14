@@ -1,0 +1,11 @@
+{
+  "baseUrl": "http://127.0.0.1:8899/",
+  "publish": { "mode": "npm" },
+  "npm": {
+    "registry": "http://127.0.0.1:8899/npm/",
+    "tarballDir": "tarballs"
+  },
+  "git": {
+    "url": "https://git.internal.example.com/dsh/dsh-internal-market"
+  }
+}

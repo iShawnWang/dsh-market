@@ -1,0 +1,91 @@
+{
+  "format": 1,
+  "title": {
+    "en": "Internal DSH Plugins",
+    "zh-cn": "公司内部 DSH 插件"
+  },
+  "description": {
+    "en": "Plugins released by the internal platform team. Not published to any public market.",
+    "zh-cn": "内部平台团队发布的插件，不发布到任何公共市场。"
+  },
+  "metadata": {
+    "categories": {
+      "platform": {
+        "title": {
+          "en": "Platform",
+          "zh-cn": "平台"
+        }
+      },
+      "tools": {
+        "title": {
+          "en": "Tools",
+          "zh-cn": "工具"
+        }
+      }
+    },
+    "labels": {
+      "internal": {
+        "title": {
+          "en": "Internal",
+          "zh-cn": "内部"
+        }
+      },
+      "experimental": {
+        "title": {
+          "en": "Experimental",
+          "zh-cn": "实验"
+        }
+      }
+    },
+    "sortKeys": {
+      "updated": {
+        "title": {
+          "en": "Recently updated",
+          "zh-cn": "最近更新"
+        },
+        "order": "desc"
+      }
+    }
+  },
+  "plugins": [
+    {
+      "name": "dsh-hello-world",
+      "title": {
+        "en": "Hello World",
+        "zh-cn": "Hello World 示例"
+      },
+      "description": {
+        "en": "Internal sample plugin: adds a sidebar tab that shows a centered hello world.",
+        "zh-cn": "公司内部示例插件：在左侧新增一个标签，点击后主区域居中显示 hello world。"
+      },
+      "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iOCIgc3Ryb2tlPSIjN0M4Q0Y4IiBzdHJva2Utd2lkdGg9IjEuNiIvPjxwYXRoIGQ9Ik04LjYgMTJoNi44TTEyIDguNnY2LjgiIHN0cm9rZT0iIzdDOENGOCIgc3Ryb2tlLXdpZHRoPSIxLjYiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjwvc3ZnPg==",
+      "repository": {
+        "url": "https://git.internal.example.com/dsh/dsh-hello-world",
+        "directory": "plugins/dsh-hello-world"
+      },
+      "metadata": {
+        "category": "platform",
+        "labels": [
+          "internal"
+        ],
+        "keywords": [
+          "demo",
+          "sample"
+        ]
+      },
+      "versions": [
+        {
+          "version": "0.1.0",
+          "publishTimestamp": 1763164800,
+          "source": {
+            "type": "npm",
+            "registry": "http://127.0.0.1:8899/npm/"
+          },
+          "engines": {
+            "dsh": ">=0.2.2-rc.1 <0.3.0-0"
+          }
+        }
+      ]
+    }
+  ]
+}
