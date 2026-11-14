@@ -46,7 +46,7 @@ function sourceFor(name, version) {
     if (config.npm?.registry !== undefined) source.registry = config.npm.registry;
     return source;
   }
-  // Static mode: the version is pinned to a commit in the internal Git host.
+  // Static mode: the version is pinned to a commit in the Git host that serves this repository.
   // `path` is the package directory inside that repository — the market and the
   // plugins live in one monorepo, so it is always needed.
   const entry = releases[name].find((item) => item.version === version);

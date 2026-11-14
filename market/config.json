@@ -1,7 +1,7 @@
 {
-  "baseUrl": "https://git.internal.example.com/dsh/dsh-internal-market/-/raw/main/market/",
+  "baseUrl": "https://raw.githubusercontent.com/iShawnWang/dsh-market/main/market/",
   "publish": { "mode": "static" },
   "git": {
-    "url": "https://git.internal.example.com/dsh/dsh-internal-market"
+    "url": "https://github.com/iShawnWang/dsh-market"
   }
 }

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Record a release of one plugin package, the way internal CI does it.
+ * Record a release of one plugin package, the way CI does it.
  *
  *   node scripts/release.mjs dsh-hello-world
  *   node scripts/release.mjs dsh-hello-world --registry

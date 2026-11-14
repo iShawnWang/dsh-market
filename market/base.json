@@ -1,12 +1,12 @@
 {
   "format": 1,
   "title": {
-    "en": "Internal DSH Plugins",
-    "zh-cn": "公司内部 DSH 插件"
+    "en": "DSH Market",
+    "zh-cn": "DSH 插件市场"
   },
   "description": {
-    "en": "Plugins released by the internal platform team. Not published to any public market.",
-    "zh-cn": "内部平台团队发布的插件，不发布到任何公共市场。"
+    "en": "A DSH plugin market that lives entirely in one Git repository: the index is a JSON file in the repo, plugins are subdirectories of the same repo.",
+    "zh-cn": "完全托管在一个 Git 仓库里的 DSH 插件市场：索引是仓库中的一个 JSON 文件，插件是同一个仓库的子目录。"
   },
   "metadata": {
     "categories": {
@@ -14,7 +14,7 @@
       "tools": { "title": { "en": "Tools", "zh-cn": "工具" } }
     },
     "labels": {
-      "internal": { "title": { "en": "Internal", "zh-cn": "内部" } },
+      "demo": { "title": { "en": "Demo", "zh-cn": "示例" } },
       "experimental": { "title": { "en": "Experimental", "zh-cn": "实验" } }
     },
     "sortKeys": {

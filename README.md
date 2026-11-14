@@ -1,70 +1,74 @@
-# dsh-internal-market
+# dsh-market
 
-公司内部的 DSH 插件市场。**全部内容都在一个私有 Git 仓库里**：索引是仓库里的一个
-JSON 文件，插件是仓库里的子目录。不需要 npm registry，不需要 Nexus，也不需要发到
-GitHub。
+A [DeepSeek Harness](https://github.com/deepseek-ai) plugin market that lives entirely
+inside one Git repository. **No registry, no server, no build backend**: the index is a
+JSON file in this repo, and every plugin is a subdirectory of the same repo.
 
-DSH 用 `git+https://…git#<commit>&path:/plugins/<pkg>` 安装插件，索引里每个版本都
-钉死一个 commit —— 也就是说「发布」= 打 tag + 改索引里的 commit。
+DSH installs a plugin with `git+https://…git#<commit>&path:/plugins/<pkg>`, and each
+version in the index pins an exact commit — so "publishing" is just: bump the version,
+record the commit, rebuild the index, push.
 
 ```
-dsh-internal-market/
+dsh-market/
 ├── market/
-│   ├── config.json           # 索引 URL、内网 Git 地址、发布模式
-│   ├── base.json             # 索引公共部分：标题、描述、分类 / 标签 / 排序键声明
-│   ├── releases.json         # 每个插件发布过哪些版本 + 对应 commit（由 release.mjs 维护）
-│   ├── meta/<pkg>.json       # 每个插件的展示信息：标题、描述、图标、仓库地址
-│   └── index.json            # ← 生成物，DSH 消费的就是这个文件（format 1）
+│   ├── config.json           # index URL + Git URL + publish mode
+│   ├── base.json             # market-wide: title, description, category/label/sort declarations
+│   ├── releases.json         # which versions were published, with the commit they were published at
+│   ├── meta/<pkg>.json       # per-plugin presentation: title, description, icon, repository
+│   └── index.json            # ← generated; this is the file DSH consumes (format 1)
 ├── plugins/
-│   └── dsh-hello-world/      # 示例插件：左侧新增一个标签，点开是居中的 hello world
+│   └── dsh-hello-world/      # sample plugin: a sidebar tab showing a centered "hello world"
 └── scripts/
-    ├── build-index.mjs       # 合成并校验 index.json（--check 只校验，--verify 用 DSH 自带解析器再验）
-    ├── release.mjs           # 记录一次发布：读 package.json 的 version → 写 releases.json + commit
-    └── serve.mjs             # 本地把 market/ 挂成 HTTP（只为让 DSH 能读到 index.json）
+    ├── build-index.mjs       # compose + validate index.json (--check / --verify)
+    ├── release.mjs           # record a release: read package.json version → releases.json + commit
+    ├── mirror.sh             # refresh the bare mirror used by local git+file:// installs
+    └── serve.mjs             # serve market/ over HTTP for local checks
 ```
 
-`index.json` 由 `base.json` + `meta/*.json` + `releases.json` 合成，**不要手改**。
+`index.json` is composed from `base.json` + `meta/*.json` + `releases.json` — do not edit
+it by hand.
 
-## 为什么索引还要走 HTTP
+## Why the index still needs HTTP
 
-DSH 只接受 **绝对 http(s) URL** 作为索引源（`file://` 会被拒），所以即使插件本体走
-Git，索引文件也得有个 HTTP 地址。生产上用内网 Git 服务自带的 raw 文件地址即可：
+DSH only accepts an **absolute http(s) URL** as an index source (`file://` is rejected),
+so even a purely Git-based market needs one HTTP endpoint for `index.json`. On GitHub the
+raw file URL is enough:
 
-| 服务 | 索引 URL |
-| --- | --- |
-| GitLab | `https://git.intra/dsh/dsh-internal-market/-/raw/main/market/index.json` |
-| Gitea / Gogs | `https://git.intra/dsh/dsh-internal-market/raw/branch/main/market/index.json` |
-| 任意静态服务 | `https://dsh-plugins.intra/index.json` |
+```
+https://raw.githubusercontent.com/iShawnWang/dsh-market/main/market/index.json
+```
 
-`market/config.json` 里的 `baseUrl` 就是填这个地址前缀，`build-index.mjs` 用它来解析
-索引内部的相对引用。
+`baseUrl` in `market/config.json` is that directory, and `build-index.mjs` resolves every
+relative reference in the index against it. Any other host works the same way — GitLab
+(`/-/raw/main/market/index.json`), Gitea (`/raw/branch/main/market/index.json`), or plain
+static hosting.
 
-## 发布一次新版（CI 里就这三步）
+## Publishing a release
 
 ```bash
-# 1. 改版本号并提交
+# 1. bump the version and commit the plugin source
 cd plugins/dsh-hello-world && pnpm version patch && cd ../..
 git add -A && git commit -m "release dsh-hello-world"
 
-# 2. 记录版本（自动写入当前 HEAD 的 40 位 commit）
+# 2. record it (writes the current HEAD commit into releases.json)
 node scripts/release.mjs dsh-hello-world
 
-# 3. 重建索引 + 用 DSH 自带解析器校验 + 提交 + 刷新镜像
+# 3. rebuild + validate with DSH's own parser, then commit and push
 node scripts/build-index.mjs --verify
 git add market/ && git commit -m "publish index" && git push
-./scripts/mirror.sh
 ```
 
-`--verify` 用的是 DSH 自带的 `parseMarketIndex`——也就是用户打开「发现」页时实际跑的
-那个解析器，所以它能过就一定能被市场接受。它按顺序尝试三个来源：
+`--verify` runs the same `parseMarketIndex` DSH runs when a user opens the Discover page,
+so an index that passes locally is guaranteed to be accepted. It loads the parser in this
+order:
 
-1. 仓库根的 `node_modules`（`npm install` 装了 `@deepseek-ai/dsh-plugin-market-index`，
-   这是正常做法；不要用 `pnpm install`，在这个仓库里会挂住）；
-2. `DSH_PACKAGES_DIR` 环境变量；
-3. 直接 import 不到时给出上面两条失败原因。
+1. `@deepseek-ai/dsh-plugin-market-index` from the repo's `node_modules`
+   (`npm install`; **not** `pnpm install`, which hangs on this repo);
+2. the same package under `DSH_PACKAGES_DIR`;
+3. otherwise it prints both failures and exits non-zero.
 
-> macOS 上 DSH 的包在 `app.asar` 里，普通 `node` 读不了。要在本机借用 DSH 自带的解析器
-> 而不装依赖，得用 Electron 的 node 模式跑：
+> On macOS the DSH packages live inside `app.asar`, which plain `node` cannot import. To
+> reuse the parser bundled with an installed DSH without adding dependencies:
 >
 > ```bash
 > DSH_PACKAGES_DIR="/Applications/DeepSeek Harness.app/Contents/Resources/app.asar/dsh/node_modules/@deepseek-ai" \
@@ -72,76 +76,85 @@ git add market/ && git commit -m "publish index" && git push
 >   scripts/build-index.mjs --verify
 > ```
 
-顺序不能反：`release.mjs` 记录的是**当前 HEAD**，所以必须先提交插件改动，再记录版本，
-最后提交索引。它会在以下情况拒绝执行：
+The order matters: `release.mjs` records the **current HEAD**, so commit the plugin
+source first, record the version second, and commit the index last. It refuses to run when
 
-- 版本号已经记录过（要发新版就得先 bump）；
-- 新版本不高于已记录的最新版本；
-- 工作区不干净（除非 `--allow-dirty`，但那样记录的 commit 里没有你的改动）。
+- the version is already recorded (bump it first);
+- the new version is not newer than the newest recorded one;
+- the working tree is dirty (unless `--allow-dirty`, in which case the recorded commit
+  will not contain your changes).
 
-用户那边看到新版的方式：打开 **插件 → 发现**，卡片上出现更新；或者 **插件 → 已安装**
-里点检查更新。DSH 没有后台自动更新，所以节奏完全由你控制 —— 想让全员升级就发索引，
-想按住就暂时不更新 `index.json`。
+How users see a release: **Plugins → Discover** shows the new version, or
+**Plugins → Installed → check for updates**. DSH has no background auto-update, so the
+pace is entirely up to the publisher — publish the index to roll out, leave `index.json`
+alone to hold everyone where they are.
 
-## 桌面端怎么接入
+## Connecting DSH
 
-1. **打开实验开关**：插件页 → Experimental plugins → 打开「自定义插件索引」。
-   这会挂上 `@deepseek-ai/dsh-experimental-plugin-market-bundle`，出现「发现」标签页。
-2. **添加索引源**：插件 → 发现 → 管理索引源… → 填内网 Git 的 raw 地址。
-   索引源只能由用户自己增删，agent 侧的 `plugin_market` 工具是只读的。
-3. 企业批量下发可以在 profile 的 `cordis.patch.yml` 预置默认索引源：
+1. **Enable the experimental switch**: Plugins → Experimental plugins → turn on
+   **custom plugin indexes**. That mounts
+   `@deepseek-ai/dsh-experimental-plugin-market-bundle` and adds the Discover tab.
+2. **Add the index source**: Plugins → Discover → Manage index sources… → paste
+   `https://raw.githubusercontent.com/iShawnWang/dsh-market/main/market/index.json`.
+   Index sources can only be added by the user; the agent-side `plugin_market` tool is
+   read-only.
+3. To preset it fleet-wide, add it to the profile's `cordis.patch.yml`:
 
 ```yaml
 - id: plugin-market
   config:
     indexes:
-      - https://git.intra/dsh/dsh-internal-market/-/raw/main/market/index.json
+      - https://raw.githubusercontent.com/iShawnWang/dsh-market/main/market/index.json
 ```
 
-## Git 安装会用到哪些认证
+## Installing without the UI
 
-- DSH 调 `pnpm add git+https://…`，git 使用用户自己的 credential helper
-  （`~/.gitconfig` 的 `credential.helper`）和 `url.<base>.insteadOf` 配置。
-- DSH 在安装前做 `git ls-remote` 探活时会禁用 credential helper 且不提示输入
-  （`GIT_TERMINAL_PROMPT=0`），所以私有仓库如果必须登录，探活会报 `unknown`——
-  这不阻塞安装，只是少一次提前校验。
-- 结论：**用内网 Git 的部署 token（read-only）配在用户机器的 credential helper 里**，
-  不要把 token 写进索引 URL（DSH 会拒绝带凭据的 URL）。
+```
+plugin_manager install_bundle  target="git+https://github.com/iShawnWang/dsh-market.git#<40-hex-commit>&path:/plugins/dsh-hello-world"
+```
 
-## 本地联调
+Pass `registry` explicitly (`registry="https://registry.npmmirror.com/"` works from
+mainland China). Installing re-resolves the whole profile, and DSH starts pnpm with a
+scrubbed environment that drops proxy variables, so a direct connection to
+`registry.npmjs.org` may time out.
+
+## Local development
 
 ```bash
-node scripts/serve.mjs      # http://127.0.0.1:8899/index.json
+node scripts/serve.mjs        # http://127.0.0.1:8899/index.json
 ```
 
-把索引源填 `http://127.0.0.1:8899/index.json`。
+Point the index source at `http://127.0.0.1:8899/index.json`.
 
-或者跳过界面，直接从本机裸镜像安装（`git+file://` 会被 `parseInstallSpec` 识别为
-path 来源，不需要任何服务）：
+Installing straight from a local clone skips HTTP entirely — `git+file://` is detected as
+a path-style source by `parseInstallSpec`:
 
 ```bash
-./scripts/mirror.sh          # 刷新 ../dsh-internal-market.git
+./scripts/mirror.sh          # rebuild ../dsh-market.git
+plugin_manager install_bundle  target="git+file://<abs-path>/dsh-market.git#<40-hex-commit>&path:/plugins/dsh-hello-world"
 ```
 
-```
-plugin_manager install_bundle  target="git+file://<绝对路径>/dsh-internal-market.git#<40位commit>&path:/plugins/dsh-hello-world"
-```
+Two caveats:
 
-注意两点：
+- the mirror's commit must stay reachable, or the profile's `pnpm install` breaks later —
+  that is why the mirror lives beside the working tree and is refreshed by `mirror.sh`;
+- pass `registry` explicitly (see above).
 
-- **必须传 `registry`**。安装时 pnpm 会重新解析整个 profile 的依赖，而 DSH 拉起的子
-  进程剥掉了代理环境变量，直连 `registry.npmjs.org` 会超时。本机实测
-  `registry="https://registry.npmmirror.com/"` 可用。
-- `git+file://` 的 commit 必须一直留在那个裸仓库里。删掉镜像目录后 profile 的
-  `pnpm install` 会失败——所以镜像放在仓库旁边，并用 `scripts/mirror.sh` 刷新。
+After installing, restart DSH: a **Hello World** row appears in the sidebar, and clicking
+it shows a centered `hello world`.
 
-装完重启 DSH，左侧栏出现 Hello World，点开是居中的 hello world。
+## Known limits
 
-## 已知边界
+- **`commit` in the index must be 40 lowercase hex** — short SHAs and branch names are
+  rejected.
+- **`url` must be https, canonical, and at least two path segments**, with no query or
+  fragment.
+- The Discover detail page can read a plugin's README, because DSH partial-clones the
+  pinned commit — so `plugins/<pkg>/README.md` is worth writing.
+- The whole index is validated as one unit: a single rule violation rejects everything,
+  and the error points at the JSON path. Always run `build-index.mjs --verify` before
+  publishing.
 
-- **索引里的 `commit` 必须是 40 位小写 hex**，短 SHA 或分支名都会被拒。
-- **`url` 必须是 https、canonical、路径至少两段**，且不能带 query / fragment。
-- 私有 Git 仓库在「发现」详情页能读到 README（DSH 会对该 commit 做 partial clone），
-  所以 `plugins/<pkg>/README.md` 值得写好。
-- 一个索引被解析器整体校验：任何一条规则不满足，整个索引都会被拒，错误信息会指出
-  JSON 路径。所以发索引前一定跑 `build-index.mjs --verify`。
+## License
+
+MIT

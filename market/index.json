@@ -1,12 +1,12 @@
 {
   "format": 1,
   "title": {
-    "en": "Internal DSH Plugins",
-    "zh-cn": "公司内部 DSH 插件"
+    "en": "DSH Market",
+    "zh-cn": "DSH 插件市场"
   },
   "description": {
-    "en": "Plugins released by the internal platform team. Not published to any public market.",
-    "zh-cn": "内部平台团队发布的插件，不发布到任何公共市场。"
+    "en": "A DSH plugin market that lives entirely in one Git repository: the index is a JSON file in the repo, plugins are subdirectories of the same repo.",
+    "zh-cn": "完全托管在一个 Git 仓库里的 DSH 插件市场：索引是仓库中的一个 JSON 文件，插件是同一个仓库的子目录。"
   },
   "metadata": {
     "categories": {
@@ -24,10 +24,10 @@
       }
     },
     "labels": {
-      "internal": {
+      "demo": {
         "title": {
-          "en": "Internal",
-          "zh-cn": "内部"
+          "en": "Demo",
+          "zh-cn": "示例"
         }
       },
       "experimental": {
@@ -47,47 +47,5 @@
       }
     }
   },
-  "plugins": [
-    {
-      "name": "dsh-hello-world",
-      "title": {
-        "en": "Hello World",
-        "zh-cn": "Hello World 示例"
-      },
-      "description": {
-        "en": "Internal sample plugin: adds a sidebar tab that shows a centered hello world.",
-        "zh-cn": "公司内部示例插件：在左侧新增一个标签，点击后主区域居中显示 hello world。"
-      },
-      "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iOCIgc3Ryb2tlPSIjN0M4Q0Y4IiBzdHJva2Utd2lkdGg9IjEuNiIvPjxwYXRoIGQ9Ik04LjYgMTJoNi44TTEyIDguNnY2LjgiIHN0cm9rZT0iIzdDOENGOCIgc3Ryb2tlLXdpZHRoPSIxLjYiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjwvc3ZnPg==",
-      "repository": {
-        "url": "https://git.internal.example.com/dsh/dsh-hello-world",
-        "directory": "plugins/dsh-hello-world"
-      },
-      "metadata": {
-        "category": "platform",
-        "labels": [
-          "internal"
-        ],
-        "keywords": [
-          "demo",
-          "sample"
-        ]
-      },
-      "versions": [
-        {
-          "version": "0.1.0",
-          "publishTimestamp": 1794672890,
-          "source": {
-            "type": "git",
-            "url": "https://git.internal.example.com/dsh/dsh-internal-market",
-            "commit": "bdbd8a6e9c1fefd7808249085414a979907c4e2d",
-            "path": "plugins/dsh-hello-world"
-          },
-          "engines": {
-            "dsh": ">=0.2.2-rc.1 <0.3.0-0"
-          }
-        }
-      ]
-    }
-  ]
+  "plugins": []
 }

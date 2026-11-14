@@ -7,7 +7,7 @@
 # every publish, so `pnpm install` in the profile keeps working.
 set -euo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
-mirror="${1:-$(dirname "$root")/dsh-internal-market.git}"
+mirror="${1:-$(dirname "$root")/dsh-market.git}"
 
 rm -rf "$mirror"
 git clone -q --bare "$root" "$mirror"

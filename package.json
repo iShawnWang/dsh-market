@@ -1,13 +1,15 @@
 {
-  "name": "dsh-internal-market",
+  "name": "dsh-market",
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "公司内部 DSH 插件市场：私有插件索引 + 内部插件包，不发布到公共市场。",
+  "description": "A DSH plugin market that lives entirely in one Git repository: JSON index + plugin packages as subdirectories.",
+  "license": "MIT",
   "scripts": {
     "build": "node scripts/build-index.mjs",
     "check": "node scripts/build-index.mjs --check",
     "serve": "node scripts/serve.mjs",
+    "mirror": "./scripts/mirror.sh",
     "pack:hello": "pnpm --dir plugins/dsh-hello-world pack"
   },
   "devDependencies": {

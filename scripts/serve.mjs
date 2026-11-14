@@ -4,7 +4,7 @@
  *
  * DSH requires an index source to be an absolute http(s) URL — a `file://`
  * path is rejected — so even a purely Git-based market needs some HTTP surface
- * for the `index.json` file. In production that is the internal Git host's raw
+ * for the `index.json` file. In production that is the Git host's raw
  * file endpoint (GitLab: `/-/raw/main/market/index.json`, Gitea: `/raw/branch/main/market/index.json`).
  *
  *   node scripts/serve.mjs                 # http://127.0.0.1:8899/index.json

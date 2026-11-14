@@ -1,7 +1,7 @@
 {
   "name": "dsh-hello-world",
   "version": "0.1.0",
-  "description": "公司内部示例插件：在左侧栏新增一个独立标签，点击后主区域显示居中的 hello world。",
+  "description": "示例插件：在左侧栏新增一个独立标签，点击后主区域显示居中的 hello world。",
   "license": "MIT",
   "type": "module",
   "main": "lib/index.js",
@@ -31,9 +31,11 @@
       ]
     }
   },
-  "author": "internal-platform",
+  "author": "iShawnWang",
   "repository": {
     "type": "git",
-    "url": "git+https://git.internal.example.com/dsh/dsh-hello-world.git"
-  }
+    "url": "git+https://github.com/iShawnWang/dsh-market.git",
+    "directory": "plugins/dsh-hello-world"
+  },
+  "homepage": "https://github.com/iShawnWang/dsh-market"
 }

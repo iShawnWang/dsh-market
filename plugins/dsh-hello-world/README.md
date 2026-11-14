@@ -1,38 +1,55 @@
 # dsh-hello-world
 
-公司内部示例插件（Demo）：在 DSH 左侧栏新增一个独立标签 **Hello World**，点击后主区域居中显示 `hello world`。
+Sample DSH plugin: adds a **Hello World** tab to the left sidebar. Clicking it shows a
+centered `hello world` in the main area.
 
-它同时是「内部插件市场」的最小可发布单元，用来演示内部 CI 的打包与发版流程。
+It doubles as the smallest publishable unit of [dsh-market](../..) — useful as a starting
+point for your own plugin and as a reference for the release flow.
 
-## 结构
+## Layout
 
-| 文件 | 作用 |
+| File | Purpose |
 | --- | --- |
-| `package.json` | Bundle 清单。`dsh.bundle.patch` 指向 patch 层，`dsh.client` 声明浏览器半区 |
-| `cordis.patch.yml` | patch 层：向 loader 插入一条 `dsh-hello-world` 条目 |
-| `lib/index.js` | Host 半区。本插件没有 host 逻辑，只提供 `apply()` |
-| `lib/client.js` | 浏览器半区。注册 `main`（keyed slot，页面）与 `sidebar.panellist`（list slot，左侧标签） |
+| `package.json` | Bundle manifest. `dsh.bundle.patch` points at the patch layer, `dsh.client` declares the browser half |
+| `cordis.patch.yml` | Patch layer: inserts one `dsh-hello-world` entry into the loader |
+| `lib/index.js` | Host half. Nothing to do here, just an `apply()` |
+| `lib/client.js` | Browser half. Registers `main` (keyed slot, the page) and `sidebar.panellist` (list slot, the sidebar row) |
 
-## 两个 slot 如何拼成一个标签
+## How two slots make one sidebar tab
 
-- `sidebar.panellist` 的条目是**元数据驱动**的：`id` + `label` + `order` 决定左侧那一行，浏览器半区注册的组件只负责画 18px 图标。
-- `main` 是 keyed slot，`key` 必须与 `sidebar.panellist` 的 `id` 相同。点左侧那一行时，布局执行 `ctx.layout.selectPanel(id)`，按同一个 `key` 去 `main` 里找组件渲染。
-- 因此：**两处 id 必须一致**；只有 `main` 没有 `sidebar.panellist` 就没有入口，只有 `sidebar.panellist` 没有 `main` 点了会抛错。
+- A `sidebar.panellist` entry is **metadata-driven**: `id`, `label` and `order` decide the
+  sidebar row, and the registered component only draws the icon (16px expanded, 18px
+  collapsed).
+- `main` is a keyed slot, and its `key` must equal the `sidebar.panellist` `id`. Clicking
+  the row runs `ctx.layout.selectPanel(id)`, which looks up the same `key` in `main` and
+  renders that component.
+- So the two ids must match. `main` without `sidebar.panellist` has no entry point, and
+  `sidebar.panellist` without `main` throws when clicked.
 
-## 本地开发
+The sidebar row is built from entry metadata, not from the component — returning `null`
+from the icon component leaves a blank but clickable row.
+
+## Layout notes
+
+`main` provides a flex column container, so the page uses `flex: 1 1 auto` with
+`minHeight: 100%` plus `alignItems` / `justifyContent: center` to center its content.
+Colors come from `--dsw-alias-*` theme tokens, so the plugin follows light and dark themes.
+
+## Local development
 
 ```bash
-# 在仓库根目录
-pnpm --filter dsh-hello-world pack     # 或 cd plugins/dsh-hello-world && pnpm pack
+pnpm --dir plugins/dsh-hello-world pack     # from the repo root
 ```
 
-安装到 profile 后重启 DSH 即可看到左侧标签。
+Install the tarball or a `git+https://…#<commit>&path:/plugins/dsh-hello-world` spec, then
+restart DSH.
 
-## 发版
+## Release
 
-不要手工改 `market/` 下的文件。改完 `package.json` 的 `version` 后，在仓库根目录执行：
+Do not edit anything under `market/` by hand. Bump `version` in `package.json`, then from
+the repo root:
 
 ```bash
-node scripts/build-index.mjs
-git commit -am "release dsh-hello-world@0.1.0"
+node scripts/release.mjs dsh-hello-world
+node scripts/build-index.mjs --verify
 ```
