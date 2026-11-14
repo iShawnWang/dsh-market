@@ -49,10 +49,16 @@ git add -A && git commit -m "release dsh-hello-world"
 # 2. 记录版本（自动写入当前 HEAD 的 40 位 commit）
 node scripts/release.mjs dsh-hello-world
 
-# 3. 重建索引 + 用 DSH 自带解析器校验 + 提交
-node scripts/build-index.mjs --verify
+# 3. 重建索引 + 用 DSH 自带解析器校验 + 提交 + 刷新镜像
+DSH_PACKAGES_DIR=/Applications/DeepSeek\ Harness.app/Contents/Resources/app.asar/dsh/node_modules/@deepseek-ai \
+  node scripts/build-index.mjs --verify
 git add market/ && git commit -m "publish index" && git push
+./scripts/mirror.sh
 ```
+
+`--verify` 用的是 DSH 自带的 `parseMarketIndex`——也就是用户打开「发现」页时实际跑的
+那个解析器，所以它能过就一定能被市场接受。仓库根没装依赖时它会从
+`DSH_PACKAGES_DIR` 读，也可以先 `pnpm install` 走正常包解析。
 
 顺序不能反：`release.mjs` 记录的是**当前 HEAD**，所以必须先提交插件改动，再记录版本，
 最后提交索引。它会在以下情况拒绝执行：
@@ -96,15 +102,26 @@ git add market/ && git commit -m "publish index" && git push
 node scripts/serve.mjs      # http://127.0.0.1:8899/index.json
 ```
 
-把索引源填 `http://127.0.0.1:8899/index.json`；或者跳过界面直接装（用本仓库当远端）：
+把索引源填 `http://127.0.0.1:8899/index.json`。
+
+或者跳过界面，直接从本机裸镜像安装（`git+file://` 会被 `parseInstallSpec` 识别为
+path 来源，不需要任何服务）：
 
 ```bash
-git clone --bare . /tmp/mirror/dsh-internal-market.git
+./scripts/mirror.sh          # 刷新 ../dsh-internal-market.git
 ```
 
 ```
-plugin_manager install_bundle  target="git+file:///tmp/mirror/dsh-internal-market.git#<40位commit>&path:/plugins/dsh-hello-world"
+plugin_manager install_bundle  target="git+file://<绝对路径>/dsh-internal-market.git#<40位commit>&path:/plugins/dsh-hello-world"
 ```
+
+注意两点：
+
+- **必须传 `registry`**。安装时 pnpm 会重新解析整个 profile 的依赖，而 DSH 拉起的子
+  进程剥掉了代理环境变量，直连 `registry.npmjs.org` 会超时。本机实测
+  `registry="https://registry.npmmirror.com/"` 可用。
+- `git+file://` 的 commit 必须一直留在那个裸仓库里。删掉镜像目录后 profile 的
+  `pnpm install` 会失败——所以镜像放在仓库旁边，并用 `scripts/mirror.sh` 刷新。
 
 装完重启 DSH，左侧栏出现 Hello World，点开是居中的 hello world。
 
