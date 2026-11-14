@@ -1,123 +1,118 @@
 # dsh-internal-market
 
-公司内部的 DSH 插件市场示例仓库。同一份 `market/index.json` 既可以被 DSH 桌面端的
-**插件 → 发现 → 索引源** 消费，也可以被 `plugin_market` 工具读取。整个链路不经过
-GitHub，也不经过 npmjs.com。
+公司内部的 DSH 插件市场。**全部内容都在一个私有 Git 仓库里**：索引是仓库里的一个
+JSON 文件，插件是仓库里的子目录。不需要 npm registry，不需要 Nexus，也不需要发到
+GitHub。
+
+DSH 用 `git+https://…git#<commit>&path:/plugins/<pkg>` 安装插件，索引里每个版本都
+钉死一个 commit —— 也就是说「发布」= 打 tag + 改索引里的 commit。
 
 ```
 dsh-internal-market/
 ├── market/
-│   ├── config.json           # 市场自己的配置：索引 URL、发布模式（npm / static）、registry 地址
-│   ├── base.json             # 索引公共部分：标题、描述、分类 / 标签 / 排序键的声明
-│   ├── releases.json         # 每个插件发布过哪些版本（由 scripts/release.mjs 维护，人工别手改）
+│   ├── config.json           # 索引 URL、内网 Git 地址、发布模式
+│   ├── base.json             # 索引公共部分：标题、描述、分类 / 标签 / 排序键声明
+│   ├── releases.json         # 每个插件发布过哪些版本 + 对应 commit（由 release.mjs 维护）
 │   ├── meta/<pkg>.json       # 每个插件的展示信息：标题、描述、图标、仓库地址
-│   └── index.json            # ← 生成物，这就是 DSH 消费的插件索引（format 1）
+│   └── index.json            # ← 生成物，DSH 消费的就是这个文件（format 1）
 ├── plugins/
 │   └── dsh-hello-world/      # 示例插件：左侧新增一个标签，点开是居中的 hello world
 └── scripts/
-    ├── build-index.mjs       # 合成并校验 index.json（--check 只校验，--verify 用 DSH 自带解析器再验一遍）
-    ├── release.mjs           # 记录一次发布：读 package.json 的 version → 写 releases.json
-    └── serve.mjs             # 本地联调：同时提供 index.json 和一个最小 npm registry
+    ├── build-index.mjs       # 合成并校验 index.json（--check 只校验，--verify 用 DSH 自带解析器再验）
+    ├── release.mjs           # 记录一次发布：读 package.json 的 version → 写 releases.json + commit
+    └── serve.mjs             # 本地把 market/ 挂成 HTTP（只为让 DSH 能读到 index.json）
 ```
 
-`index.json` 由 `market/base.json` + `market/meta/*.json` + `market/releases.json`
-合成，**不要手改**；改上面三个来源之后重新 `node scripts/build-index.mjs --verify`。
+`index.json` 由 `base.json` + `meta/*.json` + `releases.json` 合成，**不要手改**。
 
-## 两种发布模式
+## 为什么索引还要走 HTTP
 
-`market/config.json` 的 `publish.mode` 决定插件包放在哪里。两种都可以完全内网化。
+DSH 只接受 **绝对 http(s) URL** 作为索引源（`file://` 会被拒），所以即使插件本体走
+Git，索引文件也得有个 HTTP 地址。生产上用内网 Git 服务自带的 raw 文件地址即可：
 
-### A. `"mode": "npm"` —— 走公司私有 registry（推荐）
+| 服务 | 索引 URL |
+| --- | --- |
+| GitLab | `https://git.intra/dsh/dsh-internal-market/-/raw/main/market/index.json` |
+| Gitea / Gogs | `https://git.intra/dsh/dsh-internal-market/raw/branch/main/market/index.json` |
+| 任意静态服务 | `https://dsh-plugins.intra/index.json` |
 
-插件包由 CI 用 `pnpm publish` 推到公司 Nexus / Artifactory，索引里每个版本带
-`source: { "type": "npm", "registry": "<私有 registry URL>" }`。
+`market/config.json` 里的 `baseUrl` 就是填这个地址前缀，`build-index.mjs` 用它来解析
+索引内部的相对引用。
 
-- DSH 安装时用 `pnpm add <name>@<version> --registry=<该 URL>`，token 走用户本机
-  `~/.npmrc`，不会写进索引。
-- 索引里的 registry URL **不能带 token、query 或 fragment**（DSH 会拒绝），鉴权只能靠
-  用户自己的 `.npmrc`。
-- 私有 registry 的版本在「发现」详情页看不到包内文件（只有 npmjs / npmmirror 才走
-  CDN 读取），会回退去读 `repository` 的 README——所以 `meta/<pkg>.json` 尽量写全
-  `description`，并把 `repository` 指向内网 Git。
-
-### B. `"mode": "static"` —— 索引直接指向内网 Git 的固定 commit
-
-索引里写 `source: { "type": "git", "url": "https://git.intra/...", "commit": "<40 位>",
-"path": "plugins/<pkg>" }`。DSH 用 `git+<url>.git#<commit>` 安装，走用户自己的 git
-credential helper。
-
-- 好处：不需要 registry，CI 只要打 tag + 更索引。
-- 代价：`commit` 必须是完整 40 位小写 hex，且 URL 必须是 https、路径至少两段。
-- 更新由「索引里换了 commit」驱动，所以要冻结某个版本，就别往索引里写新 commit。
-
-## CI 里怎么跑（以 npm 模式为例）
-
-顺序很重要：**包必须先在 registry 上可下载，索引最后发布**。索引里列了却下载不到的
-版本，对所有人都是装不上的坏版本。
+## 发布一次新版（CI 里就这三步）
 
 ```bash
-# 1. 改版本号（release.mjs 只认 package.json 里的 version）
+# 1. 改版本号并提交
 cd plugins/dsh-hello-world && pnpm version patch && cd ../..
+git add -A && git commit -m "release dsh-hello-world"
 
-# 2. 打 tag 并推代码
-git add -A && git commit -m "release dsh-hello-world" && git tag dsh-hello-world@0.2.0 && git push --tags
-
-# 3. 发布 tarball 到私有 registry（CI 的 NPM_TOKEN 走环境变量，不落盘）
-pnpm --filter ./plugins/dsh-hello-world publish --registry "$NEXUS_NPM_URL" --no-git-checks
-
-# 4. 记录版本 + 重建索引 + 用 DSH 自带解析器校验
+# 2. 记录版本（自动写入当前 HEAD 的 40 位 commit）
 node scripts/release.mjs dsh-hello-world
-node scripts/build-index.mjs --verify
 
-# 5. 提交索引（把 index.json 推到内网 HTTP 服务 / 对象存储）
+# 3. 重建索引 + 用 DSH 自带解析器校验 + 提交
+node scripts/build-index.mjs --verify
 git add market/ && git commit -m "publish index" && git push
 ```
 
-`scripts/release.mjs` 会拒绝重复版本、拒绝不比已记录版本更新的版本；静态模式还会
-要求工作区是干净的（除非 `--allow-dirty`），并自动写入 `git rev-parse HEAD`。
+顺序不能反：`release.mjs` 记录的是**当前 HEAD**，所以必须先提交插件改动，再记录版本，
+最后提交索引。它会在以下情况拒绝执行：
+
+- 版本号已经记录过（要发新版就得先 bump）；
+- 新版本不高于已记录的最新版本；
+- 工作区不干净（除非 `--allow-dirty`，但那样记录的 commit 里没有你的改动）。
+
+用户那边看到新版的方式：打开 **插件 → 发现**，卡片上出现更新；或者 **插件 → 已安装**
+里点检查更新。DSH 没有后台自动更新，所以节奏完全由你控制 —— 想让全员升级就发索引，
+想按住就暂时不更新 `index.json`。
 
 ## 桌面端怎么接入
 
 1. **打开实验开关**：插件页 → Experimental plugins → 打开「自定义插件索引」。
-   这会挂上 `@deepseek-ai/dsh-experimental-plugin-market-bundle`，出现「发现」标签页
-   和只读的 `plugin_market` 工具。关掉时索引源仍留在 profile 里。
-2. **添加索引源**：插件 → 发现 → 管理索引源… → 填
-   `https://dsh-plugins.intra.example.com/index.json`
-   （必须是绝对 http(s)、不能带凭据、不能带 `#`；索引 10 分钟缓存）。
-3. 之后「发现」里就能看到内部插件。**索引源只能由用户自己增删**——agent 侧的
-   `plugin_market` 工具是只读的，这是有意的权限边界。
-
-企业批量下发时可以预置默认索引源：在 profile 的 `cordis.patch.yml` 里给
-`plugin-market` 配 `indexes`（这是易失字段，profile 更新后可能需要重设）：
+   这会挂上 `@deepseek-ai/dsh-experimental-plugin-market-bundle`，出现「发现」标签页。
+2. **添加索引源**：插件 → 发现 → 管理索引源… → 填内网 Git 的 raw 地址。
+   索引源只能由用户自己增删，agent 侧的 `plugin_market` 工具是只读的。
+3. 企业批量下发可以在 profile 的 `cordis.patch.yml` 预置默认索引源：
 
 ```yaml
 - id: plugin-market
   config:
     indexes:
-      - https://dsh-plugins.intra.example.com/index.json
+      - https://git.intra/dsh/dsh-internal-market/-/raw/main/market/index.json
 ```
+
+## Git 安装会用到哪些认证
+
+- DSH 调 `pnpm add git+https://…`，git 使用用户自己的 credential helper
+  （`~/.gitconfig` 的 `credential.helper`）和 `url.<base>.insteadOf` 配置。
+- DSH 在安装前做 `git ls-remote` 探活时会禁用 credential helper 且不提示输入
+  （`GIT_TERMINAL_PROMPT=0`），所以私有仓库如果必须登录，探活会报 `unknown`——
+  这不阻塞安装，只是少一次提前校验。
+- 结论：**用内网 Git 的部署 token（read-only）配在用户机器的 credential helper 里**，
+  不要把 token 写进索引 URL（DSH 会拒绝带凭据的 URL）。
 
 ## 本地联调
 
-不用 registry、不用内网：
+```bash
+node scripts/serve.mjs      # http://127.0.0.1:8899/index.json
+```
+
+把索引源填 `http://127.0.0.1:8899/index.json`；或者跳过界面直接装（用本仓库当远端）：
 
 ```bash
-node scripts/serve.mjs          # 起在 8899，同时提供 /index.json 和 /npm/<pkg>
-curl http://127.0.0.1:8899/index.json
+git clone --bare . /tmp/mirror/dsh-internal-market.git
 ```
 
-之后把索引源填 `http://127.0.0.1:8899/index.json`（与索引同源的 http 是允许的），
-或在会话里直接装：
-
 ```
-plugin_manager install_bundle  target="dsh-hello-world@0.1.0"  registry="http://127.0.0.1:8899/npm/"
+plugin_manager install_bundle  target="git+file:///tmp/mirror/dsh-internal-market.git#<40位commit>&path:/plugins/dsh-hello-world"
 ```
 
-装完**重启 DSH**（或等 HMR），左侧栏会出现一条 Hello World，点开就是居中的 hello world。
+装完重启 DSH，左侧栏出现 Hello World，点开是居中的 hello world。
 
-## 一条经验
+## 已知边界
 
-DSH 没有「自动更新」。装上的版本被 `--save-exact` 钉死，用户不去点「已安装」页的
-检查更新就不会动。所以本仓库的更新节奏完全由 `index.json` 控制：想让全员升级，就
-把新版本写进 `releases.json`；想压住某个版本，就在索引里 `deprecated` 掉或者干脆
-不列它。
+- **索引里的 `commit` 必须是 40 位小写 hex**，短 SHA 或分支名都会被拒。
+- **`url` 必须是 https、canonical、路径至少两段**，且不能带 query / fragment。
+- 私有 Git 仓库在「发现」详情页能读到 README（DSH 会对该 commit 做 partial clone），
+  所以 `plugins/<pkg>/README.md` 值得写好。
+- 一个索引被解析器整体校验：任何一条规则不满足，整个索引都会被拒，错误信息会指出
+  JSON 路径。所以发索引前一定跑 `build-index.mjs --verify`。
