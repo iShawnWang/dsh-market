@@ -1,1 +1,9 @@
-{}
+{
+  "dsh-hello-world": [
+    {
+      "version": "0.1.0",
+      "publishTimestamp": 1794672194,
+      "commit": "a9ed8689af6da48326686bc9c0fbb92f3c38d792"
+    }
+  ]
+}
