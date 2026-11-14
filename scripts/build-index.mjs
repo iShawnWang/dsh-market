@@ -140,8 +140,37 @@ if (problems.length > 0) {
   process.exit(1);
 }
 
+/**
+ * Load the market index parser.
+ *
+ * `--verify` must check the index with the SAME parser DSH itself uses, or it
+ * proves nothing. In CI the package comes from the registry (devDependency); on
+ * a developer machine it can equally come from the installed DSH app, which is
+ * the exact runtime the index will be read by. Both are tried.
+ */
+async function loadParser() {
+  const candidates = [
+    '@deepseek-ai/dsh-plugin-market-index',
+    ...(process.env.DSH_PACKAGES_DIR === undefined
+      ? []
+      : [`file://${path.join(process.env.DSH_PACKAGES_DIR, 'dsh-plugin-market-index', 'lib', 'index.js')}`]),
+  ];
+  const failures = [];
+  for (const candidate of candidates) {
+    try {
+      return await import(candidate);
+    } catch (error) {
+      failures.push(`${candidate}: ${error instanceof Error ? error.message.split('\n')[0] : String(error)}`);
+    }
+  }
+  console.error('cannot load @deepseek-ai/dsh-plugin-market-index for --verify:');
+  for (const failure of failures) console.error(`  - ${failure}`);
+  console.error('install devDependencies (pnpm install) or set DSH_PACKAGES_DIR');
+  process.exit(1);
+}
+
 if (verify) {
-  const { parseMarketIndex } = await import('@deepseek-ai/dsh-plugin-market-index');
+  const { parseMarketIndex } = await loadParser();
   try {
     parseMarketIndex(index, indexUrl);
   } catch (error) {

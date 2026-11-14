@@ -76,11 +76,11 @@
       "versions": [
         {
           "version": "0.1.0",
-          "publishTimestamp": 1794672194,
+          "publishTimestamp": 1794672890,
           "source": {
             "type": "git",
             "url": "https://git.internal.example.com/dsh/dsh-internal-market",
-            "commit": "a9ed8689af6da48326686bc9c0fbb92f3c38d792",
+            "commit": "bdbd8a6e9c1fefd7808249085414a979907c4e2d",
             "path": "plugins/dsh-hello-world"
           },
           "engines": {
