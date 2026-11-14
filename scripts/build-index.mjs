@@ -47,13 +47,20 @@ function sourceFor(name, version) {
     return source;
   }
   // Static mode: the version is pinned to a commit in the internal Git host.
+  // `path` is the package directory inside that repository — the market and the
+  // plugins live in one monorepo, so it is always needed.
   const entry = releases[name].find((item) => item.version === version);
   if (entry?.commit === undefined) {
     throw new Error(
       `releases.json ${name}@${version}: static mode needs a 40-hex "commit" for that version`,
     );
   }
-  return { type: 'git', url: config.git.url, commit: entry.commit };
+  return {
+    type: 'git',
+    url: config.git.url,
+    commit: entry.commit,
+    path: `${config.git.packageRoot ?? 'plugins'}/${name}`,
+  };
 }
 
 const plugins = [];
