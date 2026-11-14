@@ -50,15 +50,27 @@ git add -A && git commit -m "release dsh-hello-world"
 node scripts/release.mjs dsh-hello-world
 
 # 3. 重建索引 + 用 DSH 自带解析器校验 + 提交 + 刷新镜像
-DSH_PACKAGES_DIR=/Applications/DeepSeek\ Harness.app/Contents/Resources/app.asar/dsh/node_modules/@deepseek-ai \
-  node scripts/build-index.mjs --verify
+node scripts/build-index.mjs --verify
 git add market/ && git commit -m "publish index" && git push
 ./scripts/mirror.sh
 ```
 
 `--verify` 用的是 DSH 自带的 `parseMarketIndex`——也就是用户打开「发现」页时实际跑的
-那个解析器，所以它能过就一定能被市场接受。仓库根没装依赖时它会从
-`DSH_PACKAGES_DIR` 读，也可以先 `pnpm install` 走正常包解析。
+那个解析器，所以它能过就一定能被市场接受。它按顺序尝试三个来源：
+
+1. 仓库根的 `node_modules`（`npm install` 装了 `@deepseek-ai/dsh-plugin-market-index`，
+   这是正常做法；不要用 `pnpm install`，在这个仓库里会挂住）；
+2. `DSH_PACKAGES_DIR` 环境变量；
+3. 直接 import 不到时给出上面两条失败原因。
+
+> macOS 上 DSH 的包在 `app.asar` 里，普通 `node` 读不了。要在本机借用 DSH 自带的解析器
+> 而不装依赖，得用 Electron 的 node 模式跑：
+>
+> ```bash
+> DSH_PACKAGES_DIR="/Applications/DeepSeek Harness.app/Contents/Resources/app.asar/dsh/node_modules/@deepseek-ai" \
+> ELECTRON_RUN_AS_NODE=1 "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness" \
+>   scripts/build-index.mjs --verify
+> ```
 
 顺序不能反：`release.mjs` 记录的是**当前 HEAD**，所以必须先提交插件改动，再记录版本，
 最后提交索引。它会在以下情况拒绝执行：

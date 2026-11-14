@@ -79,8 +79,13 @@ for (const [name, entries] of Object.entries(releases)) {
   if (existsSync(manifestFile)) manifest = await readJson(manifestFile);
   else problems.push(`${name}: missing plugins/${name}/package.json`);
 
+  // Only the newest release must match the working tree: older releases stay in
+  // the index forever, but `plugins/<pkg>/package.json` only holds the version
+  // currently checked out.
+  const newest = entries[0]?.version;
+
   const versions = entries.map((entry) => {
-    if (manifest !== undefined && manifest.version !== entry.version) {
+    if (manifest !== undefined && entry.version === newest && manifest.version !== entry.version) {
       problems.push(
         `${name}@${entry.version}: releases.json disagrees with plugins/${name}/package.json (${manifest.version})`,
       );
@@ -89,7 +94,13 @@ for (const [name, entries] of Object.entries(releases)) {
       version: entry.version,
       publishTimestamp: entry.publishTimestamp,
       source: sourceFor(name, entry.version),
-      ...(manifest?.engines?.dsh === undefined ? {} : { engines: { dsh: manifest.engines.dsh } }),
+      // Old releases must carry the `engines.dsh` they were published with (the
+      // working tree no longer describes them); the newest falls back to the
+      // manifest so a fresh publish never needs a hand-written range.
+      ...((entry.version === newest ? (manifest?.engines?.dsh ?? entry.engines?.dsh) : entry.engines?.dsh) ===
+      undefined
+        ? {}
+        : { engines: { dsh: entry.version === newest ? (manifest?.engines?.dsh ?? entry.engines.dsh) : entry.engines.dsh } }),
     };
   });
 

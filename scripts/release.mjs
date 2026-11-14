@@ -76,6 +76,12 @@ if (newest !== undefined) {
 
 const entry = { version, publishTimestamp: Math.floor(Date.now() / 1000) };
 
+// Freeze the compatibility range into the release record. `plugins/<name>/package.json`
+// only ever describes the version currently checked out, so without this an old
+// release would lose its `engines.dsh` the moment a newer one is published.
+const enginesDsh = manifest.engines?.dsh;
+if (typeof enginesDsh === 'string') entry.engines = { dsh: enginesDsh };
+
 if (config.publish?.mode !== 'npm') {
   if (!flags.includes('--allow-dirty')) {
     const { stdout } = await run('git', ['status', '--porcelain'], { cwd: root });
