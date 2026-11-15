@@ -2,8 +2,8 @@
 /**
  * Record a release of one plugin package, the way CI does it.
  *
- *   node scripts/release.mjs dsh-hello-world
- *   node scripts/release.mjs dsh-hello-world --registry
+ *   node scripts/release.mjs dsh-plugin-hello
+ *   node scripts/release.mjs dsh-plugin-hello --registry
  *
  * It reads `plugins/<name>/package.json` for the version (so the tag, the
  * package, and the index can never disagree), appends that version to
