@@ -47,5 +47,49 @@
       }
     }
   },
-  "plugins": []
+  "plugins": [
+    {
+      "name": "dsh-plugin-hello",
+      "title": {
+        "en": "Hello dsh-plugin",
+        "zh-cn": "Hello dsh-plugin 示例"
+      },
+      "description": {
+        "en": "Sample plugin: adds a sidebar tab that shows a centered \"Hello dsh-plugin\".",
+        "zh-cn": "示例插件：在左侧新增一个标签，点击后主区域居中显示 Hello dsh-plugin。"
+      },
+      "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iOCIgc3Ryb2tlPSIjN0M4Q0Y4IiBzdHJva2Utd2lkdGg9IjEuNiIvPjxwYXRoIGQ9Ik04LjYgMTJoNi44TTEyIDguNnY2LjgiIHN0cm9rZT0iIzdDOENGOCIgc3Ryb2tlLXdpZHRoPSIxLjYiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjwvc3ZnPg==",
+      "repository": {
+        "url": "https://github.com/iShawnWang/dsh-market",
+        "directory": "plugins/dsh-plugin-hello"
+      },
+      "metadata": {
+        "category": "platform",
+        "labels": [
+          "demo"
+        ],
+        "keywords": [
+          "demo",
+          "sample",
+          "hello",
+          "dsh-plugin"
+        ]
+      },
+      "versions": [
+        {
+          "version": "0.2.0",
+          "publishTimestamp": 1794730894,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/iShawnWang/dsh-market",
+            "commit": "64b4e2631df2f4e907658eaf3cf7c88b2d14cf73",
+            "path": "plugins/dsh-plugin-hello"
+          },
+          "engines": {
+            "dsh": ">=0.2.2-rc.1 <0.3.0-0"
+          }
+        }
+      ]
+    }
+  ]
 }

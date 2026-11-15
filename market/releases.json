@@ -1,2 +1,12 @@
 {
+  "dsh-plugin-hello": [
+    {
+      "version": "0.2.0",
+      "publishTimestamp": 1794730894,
+      "engines": {
+        "dsh": ">=0.2.2-rc.1 <0.3.0-0"
+      },
+      "commit": "64b4e2631df2f4e907658eaf3cf7c88b2d14cf73"
+    }
+  ]
 }
