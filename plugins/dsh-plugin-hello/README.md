@@ -1,7 +1,7 @@
-# dsh-hello-world
+# dsh-plugin-hello
 
-Sample DSH plugin: adds a **Hello World** tab to the left sidebar. Clicking it shows a
-centered `hello world` in the main area.
+Sample DSH plugin: adds a **Hello dsh-plugin** tab to the left sidebar. Clicking it shows a
+centered `Hello dsh-plugin` in the main area.
 
 It doubles as the smallest publishable unit of [dsh-market](../..) — useful as a starting
 point for your own plugin and as a reference for the release flow.
@@ -11,7 +11,7 @@ point for your own plugin and as a reference for the release flow.
 | File | Purpose |
 | --- | --- |
 | `package.json` | Bundle manifest. `dsh.bundle.patch` points at the patch layer, `dsh.client` declares the browser half |
-| `cordis.patch.yml` | Patch layer: inserts one `dsh-hello-world` entry into the loader |
+| `cordis.patch.yml` | Patch layer: inserts one `dsh-plugin-hello` entry into the loader |
 | `lib/index.js` | Host half. Nothing to do here, just an `apply()` |
 | `lib/client.js` | Browser half. Registers `main` (keyed slot, the page) and `sidebar.panellist` (list slot, the sidebar row) |
 
@@ -38,10 +38,10 @@ Colors come from `--dsw-alias-*` theme tokens, so the plugin follows light and d
 ## Local development
 
 ```bash
-pnpm --dir plugins/dsh-hello-world pack     # from the repo root
+pnpm --dir plugins/dsh-plugin-hello pack     # from the repo root
 ```
 
-Install the tarball or a `git+https://…#<commit>&path:/plugins/dsh-hello-world` spec, then
+Install the tarball or a `git+https://…#<commit>&path:/plugins/dsh-plugin-hello` spec, then
 restart DSH.
 
 ## Release
@@ -50,6 +50,6 @@ Do not edit anything under `market/` by hand. Bump `version` in `package.json`, 
 the repo root:
 
 ```bash
-node scripts/release.mjs dsh-hello-world
+node scripts/release.mjs dsh-plugin-hello
 node scripts/build-index.mjs --verify
 ```

@@ -17,7 +17,7 @@ dsh-market/
 │   ├── meta/<pkg>.json       # per-plugin presentation: title, description, icon, repository
 │   └── index.json            # ← generated; this is the file DSH consumes (format 1)
 ├── plugins/
-│   └── dsh-hello-world/      # sample plugin: a sidebar tab showing a centered "hello world"
+│   └── dsh-plugin-hello/      # sample plugin: a sidebar tab showing a centered "Hello dsh-plugin"
 └── scripts/
     ├── build-index.mjs       # compose + validate index.json (--check / --verify)
     ├── release.mjs           # record a release: read package.json version → releases.json + commit
@@ -47,11 +47,11 @@ static hosting.
 
 ```bash
 # 1. bump the version and commit the plugin source
-cd plugins/dsh-hello-world && pnpm version patch && cd ../..
-git add -A && git commit -m "release dsh-hello-world"
+cd plugins/dsh-plugin-hello && pnpm version patch && cd ../..
+git add -A && git commit -m "release dsh-plugin-hello"
 
 # 2. record it (writes the current HEAD commit into releases.json)
-node scripts/release.mjs dsh-hello-world
+node scripts/release.mjs dsh-plugin-hello
 
 # 3. rebuild + validate with DSH's own parser, then commit and push
 node scripts/build-index.mjs --verify
@@ -110,7 +110,7 @@ alone to hold everyone where they are.
 ## Installing without the UI
 
 ```
-plugin_manager install_bundle  target="git+https://github.com/iShawnWang/dsh-market.git#<40-hex-commit>&path:/plugins/dsh-hello-world"
+plugin_manager install_bundle  target="git+https://github.com/iShawnWang/dsh-market.git#<40-hex-commit>&path:/plugins/dsh-plugin-hello"
 ```
 
 Pass `registry` explicitly (`registry="https://registry.npmmirror.com/"` works from
@@ -131,7 +131,7 @@ a path-style source by `parseInstallSpec`:
 
 ```bash
 ./scripts/mirror.sh          # rebuild ../dsh-market.git
-plugin_manager install_bundle  target="git+file://<abs-path>/dsh-market.git#<40-hex-commit>&path:/plugins/dsh-hello-world"
+plugin_manager install_bundle  target="git+file://<abs-path>/dsh-market.git#<40-hex-commit>&path:/plugins/dsh-plugin-hello"
 ```
 
 Two caveats:
@@ -140,8 +140,8 @@ Two caveats:
   that is why the mirror lives beside the working tree and is refreshed by `mirror.sh`;
 - pass `registry` explicitly (see above).
 
-After installing, restart DSH: a **Hello World** row appears in the sidebar, and clicking
-it shows a centered `hello world`.
+After installing, restart DSH: a **Hello dsh-plugin** row appears in the sidebar, and clicking
+it shows a centered `Hello dsh-plugin`.
 
 ## Known limits
 

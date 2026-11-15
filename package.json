@@ -10,7 +10,7 @@
     "check": "node scripts/build-index.mjs --check",
     "serve": "node scripts/serve.mjs",
     "mirror": "./scripts/mirror.sh",
-    "pack:hello": "pnpm --dir plugins/dsh-hello-world pack"
+    "pack:hello": "pnpm --dir plugins/dsh-plugin-hello pack"
   },
   "devDependencies": {
     "@deepseek-ai/dsh-plugin-market-index": "0.2.2-rc.3"

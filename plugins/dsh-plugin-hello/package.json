@@ -1,7 +1,7 @@
 {
-  "name": "dsh-hello-world",
-  "version": "0.1.0",
-  "description": "示例插件：在左侧栏新增一个独立标签，点击后主区域显示居中的 hello world。",
+  "name": "dsh-plugin-hello",
+  "version": "0.2.0",
+  "description": "示例插件：在左侧栏新增一个独立标签「Hello dsh-plugin」，点击后主区域居中显示 Hello dsh-plugin。",
   "license": "MIT",
   "type": "module",
   "main": "lib/index.js",
@@ -35,7 +35,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/iShawnWang/dsh-market.git",
-    "directory": "plugins/dsh-hello-world"
+    "directory": "plugins/dsh-plugin-hello"
   },
   "homepage": "https://github.com/iShawnWang/dsh-market"
 }

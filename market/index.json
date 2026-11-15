@@ -47,48 +47,5 @@
       }
     }
   },
-  "plugins": [
-    {
-      "name": "dsh-hello-world",
-      "title": {
-        "en": "Hello World",
-        "zh-cn": "Hello World 示例"
-      },
-      "description": {
-        "en": "Sample plugin: adds a sidebar tab that shows a centered hello world.",
-        "zh-cn": "示例插件：在左侧新增一个标签，点击后主区域居中显示 hello world。"
-      },
-      "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iOCIgc3Ryb2tlPSIjN0M4Q0Y4IiBzdHJva2Utd2lkdGg9IjEuNiIvPjxwYXRoIGQ9Ik04LjYgMTJoNi44TTEyIDguNnY2LjgiIHN0cm9rZT0iIzdDOENGOCIgc3Ryb2tlLXdpZHRoPSIxLjYiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjwvc3ZnPg==",
-      "repository": {
-        "url": "https://github.com/iShawnWang/dsh-market",
-        "directory": "plugins/dsh-hello-world"
-      },
-      "metadata": {
-        "category": "platform",
-        "labels": [
-          "demo"
-        ],
-        "keywords": [
-          "demo",
-          "sample",
-          "hello-world"
-        ]
-      },
-      "versions": [
-        {
-          "version": "0.1.0",
-          "publishTimestamp": 1794677264,
-          "source": {
-            "type": "git",
-            "url": "https://github.com/iShawnWang/dsh-market",
-            "commit": "72db1e8ab019021dff722513762489e34af40f9f",
-            "path": "plugins/dsh-hello-world"
-          },
-          "engines": {
-            "dsh": ">=0.2.2-rc.1 <0.3.0-0"
-          }
-        }
-      ]
-    }
-  ]
+  "plugins": []
 }

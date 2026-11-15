@@ -1,5 +1,5 @@
 /**
- * Host half of dsh-hello-world.
+ * Host half of dsh-plugin-hello.
  *
  * The bundle has nothing host-side to do: every pixel comes from the browser
  * module in `./client.js`. The function stays so the loader entry in

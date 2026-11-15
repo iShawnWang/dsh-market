@@ -1,6 +1,6 @@
-// dsh-hello-world — browser half.
+// dsh-plugin-hello — browser half.
 //
-// Served by dsh-client-modules at /plugins/dsh-hello-world/client.js and
+// Served by dsh-client-modules at /plugins/dsh-plugin-hello/client.js and
 // executed through the vendored cordis Loader's lazy-CJS module table
 // (window.__ModuleLoader__.load). The factory body is plain CJS with
 // require() resolved against the shell's module table, so `require('react')`
@@ -14,17 +14,17 @@
 // `main` registration must exist under exactly that key.
 
 window.__ModuleLoader__.load({
-  id: 'dsh-hello-world',
+  id: 'dsh-plugin-hello',
   factory(require) {
     const React = require('react');
     const h = React.createElement;
 
     // Must match in both registrations below; it is the sidebar row's id and
     // the main slot's key.
-    const PANEL_ID = 'dsh-hello-world';
+    const PANEL_ID = 'dsh-plugin-hello';
 
     // --- the page (main keyed slot) -------------------------------------
-    function HelloWorldPage() {
+    function HelloPage() {
       return h(
         'div',
         {
@@ -42,7 +42,7 @@ window.__ModuleLoader__.load({
             letterSpacing: '-0.02em',
           },
         },
-        'hello world',
+        'Hello dsh-plugin',
       );
     }
 
@@ -50,7 +50,7 @@ window.__ModuleLoader__.load({
     // The row itself is built from the registration's metadata (label + order);
     // this component only draws the 18px glyph inside it and receives
     // { size, active } from the sidebar.
-    function HelloWorldIcon(props) {
+    function HelloIcon(props) {
       const size = typeof props?.size === 'number' ? props.size : 18;
       const active = props?.active === true;
       return h(
@@ -90,7 +90,7 @@ window.__ModuleLoader__.load({
               name: 'main',
               key: PANEL_ID,
             },
-            HelloWorldPage,
+            HelloPage,
           ),
         );
 
@@ -103,9 +103,9 @@ window.__ModuleLoader__.load({
               name: 'sidebar.panellist',
               id: PANEL_ID,
               order: 30,
-              label: 'Hello World',
+              label: 'Hello dsh-plugin',
             },
-            HelloWorldIcon,
+            HelloIcon,
           ),
         );
       },

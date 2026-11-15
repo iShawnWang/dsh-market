@@ -1,15 +1,25 @@
 {
-  "title": { "en": "Hello World", "zh-cn": "Hello World 示例" },
+  "title": {
+    "en": "Hello dsh-plugin",
+    "zh-cn": "Hello dsh-plugin 示例"
+  },
   "description": {
-    "en": "Sample plugin: adds a sidebar tab that shows a centered hello world.",
-    "zh-cn": "示例插件：在左侧新增一个标签，点击后主区域居中显示 hello world。"
+    "en": "Sample plugin: adds a sidebar tab that shows a centered \"Hello dsh-plugin\".",
+    "zh-cn": "示例插件：在左侧新增一个标签，点击后主区域居中显示 Hello dsh-plugin。"
   },
   "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iOCIgc3Ryb2tlPSIjN0M4Q0Y4IiBzdHJva2Utd2lkdGg9IjEuNiIvPjxwYXRoIGQ9Ik04LjYgMTJoNi44TTEyIDguNnY2LjgiIHN0cm9rZT0iIzdDOENGOCIgc3Ryb2tlLXdpZHRoPSIxLjYiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjwvc3ZnPg==",
   "category": "platform",
-  "labels": ["demo"],
-  "keywords": ["demo", "sample", "hello-world"],
+  "labels": [
+    "demo"
+  ],
+  "keywords": [
+    "demo",
+    "sample",
+    "hello",
+    "dsh-plugin"
+  ],
   "repository": {
     "url": "https://github.com/iShawnWang/dsh-market",
-    "directory": "plugins/dsh-hello-world"
+    "directory": "plugins/dsh-plugin-hello"
   }
 }
