@@ -57,7 +57,13 @@ function sourceFor(name, version) {
   }
   return {
     type: 'git',
-    url: config.git.url,
+    // Canonical upstream URL unless the config names a regional install mirror.
+    // `git.url` is what a well-connected machine would use; `git.installUrl` is
+    // the URL baked into the index, i.e. what every user's pnpm will actually
+    // clone. Keep it a real Git endpoint: the parser only checks the shape, so a
+    // CDN that serves files (jsDelivr) would pass validation and still fail to
+    // clone.
+    url: config.git.installUrl ?? config.git.url,
     commit: entry.commit,
     path: `${config.git.packageRoot ?? 'plugins'}/${name}`,
   };

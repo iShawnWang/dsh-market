@@ -1,7 +1,13 @@
 {
   "baseUrl": "https://raw.githubusercontent.com/iShawnWang/dsh-market/main/market/",
+  "mirrorBaseUrls": [
+    "https://gcore.jsdelivr.net/gh/iShawnWang/dsh-market@main/market/",
+    "https://ghfast.top/https://raw.githubusercontent.com/iShawnWang/dsh-market/main/market/",
+    "https://gh-proxy.com/https://raw.githubusercontent.com/iShawnWang/dsh-market/main/market/"
+  ],
   "publish": { "mode": "static" },
   "git": {
-    "url": "https://github.com/iShawnWang/dsh-market"
+    "url": "https://github.com/iShawnWang/dsh-market",
+    "installUrl": "https://ghfast.top/github.com/iShawnWang/dsh-market"
   }
 }

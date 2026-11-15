@@ -11,13 +11,13 @@ record the commit, rebuild the index, push.
 ```
 dsh-market/
 ├── market/
-│   ├── config.json           # index URL + Git URL + publish mode
+│   ├── config.json           # index URLs, install mirror, publish mode
 │   ├── base.json             # market-wide: title, description, category/label/sort declarations
 │   ├── releases.json         # which versions were published, with the commit they were published at
 │   ├── meta/<pkg>.json       # per-plugin presentation: title, description, icon, repository
 │   └── index.json            # ← generated; this is the file DSH consumes (format 1)
 ├── plugins/
-│   └── dsh-plugin-hello/      # sample plugin: a sidebar tab showing a centered "Hello dsh-plugin"
+│   └── dsh-plugin-hello/     # sample plugin: a sidebar tab showing a centered "Hello dsh-plugin"
 └── scripts/
     ├── build-index.mjs       # compose + validate index.json (--check / --verify)
     ├── release.mjs           # record a release: read package.json version → releases.json + commit
@@ -28,20 +28,91 @@ dsh-market/
 `index.json` is composed from `base.json` + `meta/*.json` + `releases.json` — do not edit
 it by hand.
 
+## Add this market to DSH
+
+Pick **one** index source URL. All of them serve the same `market/index.json`:
+
+| Where you are | Index source |
+| --- | --- |
+| Anywhere (canonical) | `https://raw.githubusercontent.com/iShawnWang/dsh-market/main/market/index.json` |
+| Mainland China (fastest) | `https://gcore.jsdelivr.net/gh/iShawnWang/dsh-market@main/market/index.json` |
+| Mainland China (alt) | `https://ghfast.top/https://raw.githubusercontent.com/iShawnWang/dsh-market/main/market/index.json` |
+| Mainland China (alt) | `https://gh-proxy.com/https://raw.githubusercontent.com/iShawnWang/dsh-market/main/market/index.json` |
+
+`jsdelivr.net` is reachable from mainland China but rate-limits hard — measured here:
+`cdn.jsdelivr.net` timed out 3/3, `gcore.jsdelivr.net` answered 3/3 in **0.8s average**,
+`ghfast.top` 3.7s, `gh-proxy.com` 1.6s. `fastly.jsdelivr.net` worked but took ~10s.
+Prefer **gcore** or **gh-proxy** in China, the raw URL elsewhere.
+
+Then:
+
+1. **Enable the experimental switch**: Plugins → Experimental plugins → turn on
+   **custom plugin indexes**. That mounts
+   `@deepseek-ai/dsh-experimental-plugin-market-bundle` and adds the Discover tab.
+2. **Add the index source**: Plugins → Discover → Manage index sources… → paste the URL.
+   Index sources can only be added by the user; the agent-side `plugin_market` tool is
+   read-only.
+3. To preset it fleet-wide, add it to the profile's `cordis.patch.yml`:
+
+```yaml
+- id: plugin-market
+  config:
+    indexes:
+      - https://gcore.jsdelivr.net/gh/iShawnWang/dsh-market@main/market/index.json
+```
+
 ## Why the index still needs HTTP
 
 DSH only accepts an **absolute http(s) URL** as an index source (`file://` is rejected),
-so even a purely Git-based market needs one HTTP endpoint for `index.json`. On GitHub the
-raw file URL is enough:
+so even a purely Git-based market needs one HTTP endpoint for `index.json`. Any host works
+— GitHub raw, jsDelivr, a CDN, GitLab (`/-/raw/main/market/index.json`), Gitea
+(`/raw/branch/main/market/index.json`), or plain static hosting.
+
+`baseUrl` in `market/config.json` is the canonical one; `mirrorBaseUrls` lists the
+alternates and is only documentation for users — the index content is identical from all
+of them.
+
+## Plugin installs also go through a mirror
+
+The install URL is **separate from the index URL** and is baked into every version's
+`source.url` in `index.json`:
+
+```jsonc
+"source": {
+  "type": "git",
+  "url": "https://ghfast.top/github.com/iShawnWang/dsh-market",
+  "commit": "64b4e2631df2f4e907658eaf3cf7c88b2d14cf73",
+  "path": "plugins/dsh-plugin-hello"
+}
+```
+
+`market/config.json` controls it:
+
+- `git.url` — the canonical repository (`https://github.com/iShawnWang/dsh-market`).
+- `git.installUrl` — optional; when set, `build-index.mjs` writes **this** into the index
+  instead. Leave it empty to install straight from GitHub.
+
+**It must be a real Git endpoint.** GitHub-proxy services like `ghfast.top` and
+`gh-proxy.com` forward Git protocol traffic and work:
 
 ```
-https://raw.githubusercontent.com/iShawnWang/dsh-market/main/market/index.json
+https://ghfast.top/github.com/iShawnWang/dsh-market     # git clone OK, 6s here
+https://gh-proxy.com/github.com/iShawnWang/dsh-market   # git clone OK, 6s here
 ```
 
-`baseUrl` in `market/config.json` is that directory, and `build-index.mjs` resolves every
-relative reference in the index against it. Any other host works the same way — GitLab
-(`/-/raw/main/market/index.json`), Gitea (`/raw/branch/main/market/index.json`), or plain
-static hosting.
+The `/https://github.com/…` form of the same proxies is for file downloads and is
+**rejected by the index parser** — `source.url must name a repository with at least two
+path segments`. jsDelivr is likewise file-only: `parseMarketIndex` happens to accept
+`https://cdn.jsdelivr.net/gh/<owner>/<repo>@main` and `marketInstallTarget` will happily
+produce a spec from it, but the clone then fails with
+`remote: Couldn't find the requested file /info/refs`. Never point `installUrl` at a CDN.
+
+To verify a mirror really clones before publishing it:
+
+```bash
+git clone --no-checkout "https://ghfast.top/github.com/iShawnWang/dsh-market.git" /tmp/probe
+git -C /tmp/probe cat-file -t <the-40-hex-commit>
+```
 
 ## Publishing a release
 
@@ -89,28 +160,10 @@ How users see a release: **Plugins → Discover** shows the new version, or
 pace is entirely up to the publisher — publish the index to roll out, leave `index.json`
 alone to hold everyone where they are.
 
-## Connecting DSH
-
-1. **Enable the experimental switch**: Plugins → Experimental plugins → turn on
-   **custom plugin indexes**. That mounts
-   `@deepseek-ai/dsh-experimental-plugin-market-bundle` and adds the Discover tab.
-2. **Add the index source**: Plugins → Discover → Manage index sources… → paste
-   `https://raw.githubusercontent.com/iShawnWang/dsh-market/main/market/index.json`.
-   Index sources can only be added by the user; the agent-side `plugin_market` tool is
-   read-only.
-3. To preset it fleet-wide, add it to the profile's `cordis.patch.yml`:
-
-```yaml
-- id: plugin-market
-  config:
-    indexes:
-      - https://raw.githubusercontent.com/iShawnWang/dsh-market/main/market/index.json
-```
-
 ## Installing without the UI
 
 ```
-plugin_manager install_bundle  target="git+https://github.com/iShawnWang/dsh-market.git#<40-hex-commit>&path:/plugins/dsh-plugin-hello"
+plugin_manager install_bundle  target="git+https://ghfast.top/github.com/iShawnWang/dsh-market.git#<40-hex-commit>&path:/plugins/dsh-plugin-hello"
 ```
 
 Pass `registry` explicitly (`registry="https://registry.npmmirror.com/"` works from
@@ -140,8 +193,8 @@ Two caveats:
   that is why the mirror lives beside the working tree and is refreshed by `mirror.sh`;
 - pass `registry` explicitly (see above).
 
-After installing, restart DSH: a **Hello dsh-plugin** row appears in the sidebar, and clicking
-it shows a centered `Hello dsh-plugin`.
+After installing, restart DSH: a **Hello dsh-plugin** row appears in the sidebar, and
+clicking it shows a centered `Hello dsh-plugin`.
 
 ## Known limits
 
