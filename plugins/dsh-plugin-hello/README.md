@@ -1,53 +1,49 @@
 # dsh-plugin-hello
 
-Sample DSH plugin: adds a **Hello dsh-plugin** tab to the left sidebar. Clicking it shows a
-centered `Hello dsh-plugin` in the main area.
+DSH 示例插件：在左侧边栏新增一个 **Hello dsh-plugin** 标签，点击后主区域居中显示
+`Hello dsh-plugin`。
 
-It doubles as the smallest publishable unit of [dsh-market](../..) — useful as a starting
-point for your own plugin and as a reference for the release flow.
+它同时也是 [dsh-market](../..) 里最小的可发布单元——可以作为你自己插件的起点，也是发布流程的参考。
 
-## Layout
+## 目录结构
 
-| File | Purpose |
+| 文件 | 作用 |
 | --- | --- |
-| `package.json` | Bundle manifest. `dsh.bundle.patch` points at the patch layer, `dsh.client` declares the browser half |
-| `cordis.patch.yml` | Patch layer: inserts one `dsh-plugin-hello` entry into the loader |
-| `lib/index.js` | Host half. Nothing to do here, just an `apply()` |
-| `lib/client.js` | Browser half. Registers `main` (keyed slot, the page) and `sidebar.panellist` (list slot, the sidebar row) |
+| `package.json` | Bundle 清单。`dsh.bundle.patch` 指向补丁层，`dsh.client` 声明浏览器端 |
+| `cordis.patch.yml` | 补丁层：向 loader 插入一条 `dsh-plugin-hello` 条目 |
+| `lib/index.js` | 宿主端。这里没有要做的事，只有一个 `apply()` |
+| `lib/client.js` | 浏览器端。注册 `main`（keyed 插槽，页面本体）和 `sidebar.panellist`（list 插槽，侧边栏行） |
 
-## How two slots make one sidebar tab
+## 两个插槽如何组成一个侧边栏标签
 
-- A `sidebar.panellist` entry is **metadata-driven**: `id`, `label` and `order` decide the
-  sidebar row, and the registered component only draws the icon (16px expanded, 18px
-  collapsed).
-- `main` is a keyed slot, and its `key` must equal the `sidebar.panellist` `id`. Clicking
-  the row runs `ctx.layout.selectPanel(id)`, which looks up the same `key` in `main` and
-  renders that component.
-- So the two ids must match. `main` without `sidebar.panellist` has no entry point, and
-  `sidebar.panellist` without `main` throws when clicked.
+- `sidebar.panellist` 条目是**元数据驱动**的：`id`、`label`、`order` 决定侧边栏这一行长什么样，
+  注册的组件只负责画图标（展开 16px，折叠 18px）。
+- `main` 是 keyed 插槽，它的 `key` 必须与 `sidebar.panellist` 的 `id` 相同。点击该行会执行
+  `ctx.layout.selectPanel(id)`，在 `main` 中查找同名 `key` 并渲染对应组件。
+- 所以两个 id 必须一致。只有 `main` 而没有 `sidebar.panellist`，就没有入口；只有
+  `sidebar.panellist` 而没有 `main`，点击时会抛错。
 
-The sidebar row is built from entry metadata, not from the component — returning `null`
-from the icon component leaves a blank but clickable row.
+侧边栏那一行是由条目元数据生成的，而不是组件本身——图标组件返回 `null` 只会得到一行空白，
+但依然可以点击。
 
-## Layout notes
+## 布局说明
 
-`main` provides a flex column container, so the page uses `flex: 1 1 auto` with
-`minHeight: 100%` plus `alignItems` / `justifyContent: center` to center its content.
-Colors come from `--dsw-alias-*` theme tokens, so the plugin follows light and dark themes.
+`main` 提供的是一个 flex 列容器，页面用 `flex: 1 1 auto` 配 `minHeight: 100%`，再配合
+`alignItems` / `justifyContent: center` 让内容居中。颜色取自 `--dsw-alias-*` 主题变量，
+因此插件会自动跟随浅色与深色主题。
 
-## Local development
+## 本地开发
 
 ```bash
-pnpm --dir plugins/dsh-plugin-hello pack     # from the repo root
+pnpm --dir plugins/dsh-plugin-hello pack     # 在仓库根目录执行
 ```
 
-Install the tarball or a `git+https://…#<commit>&path:/plugins/dsh-plugin-hello` spec, then
-restart DSH.
+安装打出来的 tarball，或使用 `git+https://…#<commit>&path:/plugins/dsh-plugin-hello` 形式的 spec，
+然后重启 DSH。
 
-## Release
+## 发布
 
-Do not edit anything under `market/` by hand. Bump `version` in `package.json`, then from
-the repo root:
+不要手工改动 `market/` 下的任何文件。先升 `package.json` 里的 `version`，然后在仓库根目录执行：
 
 ```bash
 node scripts/release.mjs dsh-plugin-hello
