@@ -33,7 +33,8 @@ dsh-market/
 │   ├── meta/<pkg>.json       # 单个插件的展示信息
 │   └── index.json            # 生成产物，DSH 消费的文件（format 1）
 ├── plugins/
-│   └── dsh-plugin-hello/     # 示例插件
+│   ├── dsh-plugin-hello/     # 示例插件
+│   └── dsh-plugin-yq-release/ # 前端发布插件
 └── scripts/
     ├── build-index.mjs       # 合成并校验 index.json（--check / --verify）
     ├── release.mjs           # 记录一次发布
