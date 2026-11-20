@@ -26,17 +26,12 @@ const BRIDGE_PREFIX = '/api/dsh-yq-release';
 /** Largest JSON body the bridge accepts. */
 const MAX_JSON_BODY_BYTES = 64 * 1024;
 
-/** Run summaries kept in memory for the panel. */
-const RECENT_RUNS_LIMIT = 20;
-
 /**
  * Plugin entry point.
  * @param {object} ctx - plugin context.
  * @param {object} config - resolved plugin config.
  */
 export function apply(ctx, config) {
-  const recentRuns = new Map();
-
   // A brand-new ledger, empty by design. This plugin has no history to inherit:
   // every record it shows was created by a release it ran itself.
   const memory = new ReleaseMemory({ file: resolveMemoryFile(config.memoryFile) });
@@ -47,8 +42,8 @@ export function apply(ctx, config) {
     memory,
   });
 
-  registerTools(ctx, service, memory, recentRuns);
-  registerBridge(ctx, service, memory, config, recentRuns);
+  registerTools(ctx, service, memory);
+  registerBridge(ctx, service, memory, config);
 }
 
 /**
@@ -56,9 +51,8 @@ export function apply(ctx, config) {
  * @param {object} ctx - plugin context.
  * @param {ReleaseService} service - release pipeline.
  * @param {ReleaseMemory} memory - release ledger.
- * @param {Map<string, object>} recentRuns - run summary store.
  */
-function registerTools(ctx, service, memory, recentRuns) {
+function registerTools(ctx, service, memory) {
   ctx.inject(['tools'], (sctx) => {
     const disposers = [];
 
@@ -127,7 +121,7 @@ function registerTools(ctx, service, memory, recentRuns) {
                 render: (args, value) => [{ type: 'text', text: renderReleaseResult(value) }],
               },
               async execute(args) {
-                const result = await service.run({
+                return service.run({
                   branch: args.branch,
                   chain: args.chain,
                   project: args.project,
@@ -138,8 +132,6 @@ function registerTools(ctx, service, memory, recentRuns) {
                   confirmProd: args.confirmProd === true,
                   env: args.env,
                 });
-                rememberRun(recentRuns, result);
-                return result;
               },
             }),
             { id: 'yq-release:run' },
@@ -237,9 +229,8 @@ function registerTools(ctx, service, memory, recentRuns) {
  * @param {ReleaseService} service - release pipeline.
  * @param {ReleaseMemory} memory - release ledger.
  * @param {object} config - plugin config.
- * @param {Map<string, object>} recentRuns - run summary store.
  */
-function registerBridge(ctx, service, memory, config, recentRuns) {
+function registerBridge(ctx, service, memory, config) {
   ctx.inject(['webServer'], (sctx) => {
     sctx.effect(() => {
       const routes = [
@@ -264,7 +255,6 @@ function registerBridge(ctx, service, memory, config, recentRuns) {
             credentials: await describeCredentials(ctx),
             settings: describeSettings(live),
             memoryFile: memory.file,
-            recentRuns: [...recentRuns.values()].reverse(),
           };
         }),
         makeRoute(ctx, '/history', async (body) => ({
@@ -574,31 +564,6 @@ function readJsonBody(req) {
     });
     req.on('error', () => resolve(undefined));
   });
-}
-
-/**
- * Keep a bounded summary of recent runs for the panel.
- * @param {Map<string, object>} store - run store.
- * @param {object} result - finished release result.
- */
-function rememberRun(store, result) {
-  const id = `${result.finishedAt}#${result.commitShort ?? 'noc'}`;
-  store.set(id, {
-    id,
-    status: result.status,
-    code: result.code,
-    message: result.message,
-    project: result.plan?.project,
-    chain: result.plan?.chain,
-    sourceBranch: result.plan?.sourceBranch,
-    targetBranch: result.plan?.targetBranch,
-    commitShort: result.commitShort,
-    finishedAt: result.finishedAt,
-  });
-  while (store.size > RECENT_RUNS_LIMIT) {
-    const oldest = store.keys().next().value;
-    store.delete(oldest);
-  }
 }
 
 /**

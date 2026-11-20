@@ -457,46 +457,6 @@ window.__ModuleLoader__.load({
     }
 
     /**
-     * One recent run row.
-     * @param {object} props - component props.
-     * @returns {object} element.
-     */
-    function RunRow(props) {
-      const run = props.run;
-      return h(
-        'div',
-        { style: styles.row },
-        h(
-          'div',
-          { style: styles.rowBody },
-          h(
-            'span',
-            { style: styles.rowTitle },
-            `${run.project ?? '?'} · ${run.chain ?? '?'} ` +
-              `${run.sourceBranch ?? ''} → ${run.targetBranch ?? ''}`,
-          ),
-          h(
-            'span',
-            { style: styles.mono },
-            `${formatTime(run.finishedAt)}` +
-              `${run.commitShort ? ` · ${run.commitShort}` : ''}` +
-              `${run.message ? ` · ${run.message}` : ''}`,
-          ),
-        ),
-        h(
-          'span',
-          {
-            style: {
-              ...styles.rowStatus,
-              color: STATUS_COLOR[run.status] ?? 'var(--dsw-alias-label-secondary)',
-            },
-          },
-          STATUS_LABEL[run.status] ?? run.status ?? '',
-        ),
-      );
-    }
-
-    /**
      * Flatten the project registry into one row per chain.
      * @param {Array<object>} projects - resolved projects.
      * @returns {Array<object>} `{ project, chain }` pairs.
@@ -711,18 +671,6 @@ window.__ModuleLoader__.load({
                       chain: entry.chain,
                       projectLabel: entry.project.label,
                     }),
-                  ),
-                ),
-          ),
-
-          h(
-            Section,
-            { title: '最近发布' },
-            (state?.recentRuns ?? []).length === 0
-              ? h('p', { style: styles.empty }, '本次会话还没有执行过发布')
-              : separated(
-                  (state.recentRuns ?? []).map((run, index) =>
-                    h(RunRow, { key: run.id ?? index, run }),
                   ),
                 ),
           ),
