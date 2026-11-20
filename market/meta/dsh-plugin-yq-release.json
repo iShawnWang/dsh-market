@@ -1,0 +1,30 @@
+{
+  "title": {
+    "en": "YQ Frontend Release",
+    "zh-cn": "YQ-前端发布"
+  },
+  "description": {
+    "en": "Release a branch to a test environment in one sentence: merge in GitLab, deploy the Spug frontend or trigger a miniprogram build, and record every release. Conflicts always stop the run.",
+    "zh-cn": "一句话把分支发到测试环境：自动合并 GitLab、发布 Spug 前端或触发小程序构建，并记录每次发布。合并冲突一律停下，不会自动解决。"
+  },
+  "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+CiAgPHBhdGggZD0iTTEyIDMuMiAxOS4yIDd2OS40TDEyIDIwLjggNC44IDE2LjRWN0wxMiAzLjJaIiBzdHJva2U9IiM3QzhDRjgiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CiAgPHBhdGggZD0iTTEyIDguMnY3LjJNOS4zIDEwLjQgMTIgOC4ybDIuNyAyLjIiIHN0cm9rZT0iIzdDOENGOCIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4K",
+  "category": "deploy",
+  "labels": [
+    "release",
+    "internal"
+  ],
+  "keywords": [
+    "release",
+    "deploy",
+    "gitlab",
+    "spug",
+    "miniprogram",
+    "qqc",
+    "发布",
+    "发版"
+  ],
+  "repository": {
+    "url": "https://github.com/iShawnWang/dsh-market",
+    "directory": "plugins/dsh-plugin-yq-release"
+  }
+}

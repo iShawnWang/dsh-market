@@ -11,11 +11,14 @@
   "metadata": {
     "categories": {
       "platform": { "title": { "en": "Platform", "zh-cn": "平台" } },
-      "tools": { "title": { "en": "Tools", "zh-cn": "工具" } }
+      "tools": { "title": { "en": "Tools", "zh-cn": "工具" } },
+      "deploy": { "title": { "en": "Deploy", "zh-cn": "发布部署" } }
     },
     "labels": {
       "demo": { "title": { "en": "Demo", "zh-cn": "示例" } },
-      "experimental": { "title": { "en": "Experimental", "zh-cn": "实验" } }
+      "experimental": { "title": { "en": "Experimental", "zh-cn": "实验" } },
+      "release": { "title": { "en": "Release", "zh-cn": "发版" } },
+      "internal": { "title": { "en": "Internal", "zh-cn": "内网" } }
     },
     "sortKeys": {
       "updated": { "title": { "en": "Recently updated", "zh-cn": "最近更新" }, "order": "desc" }
