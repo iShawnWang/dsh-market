@@ -8,5 +8,15 @@
       },
       "commit": "64b4e2631df2f4e907658eaf3cf7c88b2d14cf73"
     }
+  ],
+  "dsh-plugin-yq-release": [
+    {
+      "version": "0.2.0",
+      "publishTimestamp": 1795165337,
+      "engines": {
+        "dsh": ">=0.2.2-rc.1 <0.3.0-0"
+      },
+      "commit": "68b085fd076cf8c8488d518d7cf89e2794b2c541"
+    }
   ]
 }
