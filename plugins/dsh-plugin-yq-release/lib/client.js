@@ -321,6 +321,24 @@ window.__ModuleLoader__.load({
       },
     };
 
+    /**
+     * An ISO instant rendered as local wall-clock time.
+     * The ledger stores UTC (`...Z`); slicing that string would print `07:26`
+     * for a 15:26 release, so the instant is converted into the viewer's own
+     * time zone before formatting.
+     * @param {string} [iso] - ISO 8601 timestamp.
+     * @returns {string} `YYYY-MM-DD HH:MM:SS`, or '' when unusable.
+     */
+    function formatTime(iso) {
+      const date = new Date(String(iso ?? ''));
+      if (Number.isNaN(date.getTime())) return '';
+      const pad = (value) => String(value).padStart(2, '0');
+      return (
+        `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ` +
+        `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+      );
+    }
+
     const STATUS_LABEL = {
       success: '成功',
       failed: '失败',
@@ -460,7 +478,7 @@ window.__ModuleLoader__.load({
           h(
             'span',
             { style: styles.mono },
-            `${String(run.finishedAt ?? '').replace('T', ' ').slice(0, 19)}` +
+            `${formatTime(run.finishedAt)}` +
               `${run.commitShort ? ` · ${run.commitShort}` : ''}` +
               `${run.message ? ` · ${run.message}` : ''}`,
           ),
@@ -734,7 +752,7 @@ window.__ModuleLoader__.load({
                         h(
                           'span',
                           { style: styles.mono },
-                          `${String(record.timestamp ?? '').replace('T', ' ').slice(0, 19)} · ` +
+                          `${formatTime(record.timestamp) || '时间未知'} · ` +
                             `${record.release?.provider ?? '?'} ${record.release?.application ?? ''} ` +
                             `${record.release?.environment ?? ''}` +
                             `${record.commit_id ? ` · ${String(record.commit_id).slice(0, 7)}` : ''}`,

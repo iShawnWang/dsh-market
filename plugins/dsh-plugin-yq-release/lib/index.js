@@ -780,6 +780,23 @@ function renderPlan(value) {
 }
 
 /**
+ * An ISO instant rendered as local wall-clock time.
+ * The ledger stores UTC (`...Z`); slicing that string would print `07:26` for
+ * a 15:26 release, so the instant is converted to the host's time zone first.
+ * @param {string} [iso] - ISO 8601 timestamp.
+ * @returns {string} `YYYY-MM-DD HH:MM:SS`, or '' when unusable.
+ */
+function formatTime(iso) {
+  const date = new Date(String(iso ?? ''));
+  if (Number.isNaN(date.getTime())) return '';
+  const pad = (value) => String(value).padStart(2, '0');
+  return (
+    `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ` +
+    `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+  );
+}
+
+/**
  * Render history for the conversation.
  * @param {object} value - history payload.
  * @returns {string} rendered text.
@@ -788,7 +805,7 @@ function renderHistory(value) {
   if (!value.records?.length) return `没有历史记录（${value.file}）`;
   const lines = [`最近 ${value.records.length} 条发布记录：`];
   for (const record of value.records) {
-    const when = String(record.timestamp ?? '').replace('T', ' ').slice(0, 19);
+    const when = formatTime(record.timestamp) || '时间未知';
     lines.push(
       `· ${when} ${record.project ?? '?'} ${record.source_branch ?? '?'} → ` +
         `${record.merge?.target ?? '?'} / ${record.release?.provider ?? '?'} ` +
