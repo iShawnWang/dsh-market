@@ -1,0 +1,3 @@
+- insert:
+    - id: yq-release
+      name: dsh-plugin-yq-release

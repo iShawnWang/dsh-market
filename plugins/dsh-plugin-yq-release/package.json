@@ -1,0 +1,57 @@
+{
+  "name": "dsh-plugin-yq-release",
+  "version": "0.1.0",
+  "private": false,
+  "type": "module",
+  "description": "YQ-前端发布：把「把 feat/h5-xxx 发到测试」变成一句话，自动完成 GitLab 合并、Spug 前端发布与小程序构建。",
+  "license": "MIT",
+  "main": "lib/index.js",
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "release",
+    "deploy",
+    "gitlab",
+    "spug"
+  ],
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./icon": "./icon.svg",
+    "./locale/*.json": "./locale/*.json",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "locale",
+    "icon.svg",
+    "cordis.patch.yml",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18",
+    "dsh": ">=0.2.2-rc.1 <0.3.0-0"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/dsh-tools": ">=0.2.2-rc.1 <0.3.0-0",
+    "@deepseek-ai/schemastery": ">=3.18.4 <4"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-layout"
+      ]
+    }
+  },
+  "author": "iShawnWang",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/iShawnWang/dsh-market.git",
+    "directory": "plugins/dsh-plugin-yq-release"
+  }
+}

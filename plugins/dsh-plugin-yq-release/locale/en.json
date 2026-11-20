@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "YQ Web Release",
+    "description": "Release a branch in one sentence: merge, then deploy a Spug frontend or trigger a mini program build, recording every release. Chains grow from the ledger.",
+    "detail": "README.md"
+  }
+}
