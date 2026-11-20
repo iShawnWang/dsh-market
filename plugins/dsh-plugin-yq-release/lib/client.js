@@ -433,12 +433,15 @@ window.__ModuleLoader__.load({
     }
 
     /**
-     * One release chain row.
+     * One release chain row: how the chain is configured, plus the last attempt
+     * the ledger knows about. The history list further down is chronological;
+     * this row answers the narrower question "is this target currently green".
      * @param {object} props - component props.
      * @returns {object} element.
      */
     function ChainRow(props) {
       const chain = props.chain;
+      const last = chain.last ?? null;
       return h(
         'div',
         { style: styles.row },
@@ -452,7 +455,28 @@ window.__ModuleLoader__.load({
             `${chain.provider} · → ${chain.targetBranch}` +
               (chain.explicitOnly ? ' · 需点名项目，不从分支名推断' : ''),
           ),
+          last
+            ? h(
+                'span',
+                { style: styles.mono },
+                `上次 ${formatTime(last.timestamp).slice(5, 16) || '时间未知'} · ` +
+                  `${last.sourceBranch ?? '?'}` +
+                  `${last.commit ? ` · ${last.commit}` : ''}`,
+              )
+            : h('span', { style: styles.mono }, '还没有发布过'),
         ),
+        last
+          ? h(
+              'span',
+              {
+                style: {
+                  ...styles.rowStatus,
+                  color: STATUS_COLOR[last.result] ?? 'var(--dsw-alias-label-secondary)',
+                },
+              },
+              STATUS_LABEL[last.result] ?? last.result ?? '',
+            )
+          : null,
       );
     }
 

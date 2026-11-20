@@ -239,18 +239,34 @@ function registerBridge(ctx, service, memory, config) {
           // The registry is config plus whatever past releases taught it, so it
           // has to be read from the ledger rather than from a constant.
           const projects = await resolveProjectsSafe(live, memory);
+          // A chain row answers "what does this target look like now", and the
+          // ledger is the only place that knows: show each chain's last attempt
+          // beside its configuration, not only in the history list below.
+          const latest = await memory.latestByChain();
           return {
             chains: listChains(projects),
             projects: Object.entries(projects).map(([id, project]) => ({
               id,
               label: project.label ?? id,
-              chains: Object.entries(project.chains ?? {}).map(([chainId, chain]) => ({
-                id: chainId,
-                label: chain.label ?? chainId,
-                targetBranch: chain.targetBranch,
-                provider: chain.provider,
-                explicitOnly: Boolean(chain.explicitOnly),
-              })),
+              chains: Object.entries(project.chains ?? {}).map(([chainId, chain]) => {
+                const last = latest.get(`${id}/${chainId}`);
+                return {
+                  id: chainId,
+                  label: chain.label ?? chainId,
+                  targetBranch: chain.targetBranch,
+                  provider: chain.provider,
+                  explicitOnly: Boolean(chain.explicitOnly),
+                  last: last
+                    ? {
+                        timestamp: last.timestamp ?? null,
+                        result: last.result ?? null,
+                        code: last.code ?? null,
+                        sourceBranch: last.source_branch ?? null,
+                        commit: last.commit_id ? String(last.commit_id).slice(0, 7) : null,
+                      }
+                    : null,
+                };
+              }),
             })),
             credentials: await describeCredentials(ctx),
             settings: describeSettings(live),

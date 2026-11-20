@@ -97,6 +97,32 @@ export class ReleaseMemory {
   }
 
   /**
+   * The newest record for each chain, keyed `projectId/chainId`.
+   *
+   * A chain row in the panel answers "what does this target look like right
+   * now", which the ledger already knows: the last attempt on it. Records are
+   * scanned in file order and compared by timestamp, so a hand-appended line
+   * out of order still loses to a genuinely later one.
+   * @param {Array<object>} [records] - already-read ledger, to avoid a second read.
+   * @returns {Promise<Map<string, object>>} newest record per chain.
+   */
+  async latestByChain(records) {
+    const all = records ?? (await this.readAll());
+    const out = new Map();
+    for (const record of all) {
+      const projectId = record?.project;
+      const chainId = record?.chain?.id;
+      if (!projectId || !chainId) continue;
+      const key = `${projectId}/${chainId}`;
+      const seen = out.get(key);
+      if (!seen || String(record.timestamp ?? '') >= String(seen.timestamp ?? '')) {
+        out.set(key, record);
+      }
+    }
+    return out;
+  }
+
+  /**
    * Append one record. Never throws into the release path: a failed bookkeeping
    * write must not turn a successful release into an error the user sees.
    * @param {object} record - fields to append.
