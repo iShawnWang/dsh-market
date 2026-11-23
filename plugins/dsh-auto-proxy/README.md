@@ -17,12 +17,16 @@ DSH 调 GitHub、Google 之类境外 API 时经常超时。多数人的机器上
 ## 装上之后会发生什么
 
 插件向系统提示词注入一节 `## 网络访问：先直连，失败后再找本地代理`（`order: 950`，
-排在 bash 工具说明之前）。内容是一份排查顺序：
+排在 shell 工具说明之前）。内容是**按平台分叉**的一份排查顺序——macOS / Linux 拿到 bash 版，
+Windows 拿到 PowerShell 版，模型不会看到自己跑不了的命令。
+
+### macOS / Linux（bash）
 
 1. `env | grep -i proxy` —— 环境变量里已经有了就直接用。
-2. `scutil --proxy`（macOS）—— 读系统代理里 `HTTPProxy` / `HTTPSProxy` / `SOCKSProxy` 的端口。
-3. 探常用端口 —— `nc -z -G 1 127.0.0.1 <port>` 遍历 `7890 7897 7891 1080 1087 10808 10809 6152 8080 8888`，
-   再 `lsof -nP -iTCP -sTCP:LISTEN | grep -iE 'clash|mihomo|verge|v2ray|xray|sing-box|surge|tun2socks'` 看谁在听。
+2. `scutil --proxy`（macOS）—— 读系统代理里 `HTTPProxy` / `HTTPSProxy` / `SOCKSProxy` 的端口；
+   Linux 用 `gsettings get org.gnome.system.proxy.http port`。
+3. 探常用端口 —— `nc -z -G 1 127.0.0.1 <port>` 遍历 `7890 7897 7891 1080 1087 10808 10809 6152 8080 8888`
+   （Linux 上把 `-G` 换成 `-w`），再 `lsof -nP -iTCP -sTCP:LISTEN | grep -iE 'clash|mihomo|verge|v2ray|xray|sing-box|surge|tun2socks'` 看谁在听。
 4. 读代理软件自己的配置拿真实端口 —— 端口经常不是默认值，猜不如读：
    - Clash Verge / Clash Verge Rev：`~/Library/Application Support/io.github.clash-verge-rev.clash-verge-rev/config.yaml` 里的 `mixed-port` / `port` / `socks-port`
    - Clash / ClashX：`~/.config/clash/config.yaml`
@@ -33,14 +37,34 @@ DSH 调 GitHub、Google 之类境外 API 时经常超时。多数人的机器上
    `https_proxy=http://127.0.0.1:7897 http_proxy=http://127.0.0.1:7897 curl -sS -m 20 https://api.github.com/`
 6. 通了就沿用这组前缀，不通就换下一个端口；全都试不通要如实说"本机没找到可用代理"，而不是无限重试。
 
+### Windows（PowerShell）
+
+DSH 在 Windows 上挂的是 `pwsh` 工具，和 bash 没有命令级翻译，所以这一支整套换成 cmdlet：
+
+1. `Get-ChildItem env: | Where-Object Name -match 'proxy'` —— 环境变量里已经有就直接用。
+2. `Get-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings'` 读
+   `ProxyEnable` / `ProxyServer`（可能是 `127.0.0.1:7897`，也可能是 `http=…;https=…` 的分段写法），
+   再看 `netsh winhttp show proxy`。
+3. 探端口用 `Test-NetConnection 127.0.0.1 -Port $p -InformationLevel Quiet`。
+   **不能用 `New-Object Net.Sockets.TcpClient`**：只读沙箱下 `pwsh` 跑 ConstrainedLanguage，.NET 类型会被拒。
+   看进程用 `Get-Process | Where-Object { $_.ProcessName -match 'clash|mihomo|verge|v2ray|xray|sing-box|surge' }`，
+   端口归属用 `Get-NetTCPConnection -State Listen`。
+4. 配置路径：`$env:APPDATA\io.github.clash-verge-rev.clash-verge-rev\config.yaml`、
+   `$env:USERPROFILE\.config\clash\config.yaml`、`$env:APPDATA\mihomo-party\`、
+   `$env:APPDATA\v2rayN\guiNConfig.json`（看 `inbounds[].port`）、`$env:USERPROFILE\.config\sing-box\config.json`。
+5. 重试时写 `$env:HTTPS_PROXY='http://127.0.0.1:7897'; $env:HTTP_PROXY=$env:HTTPS_PROXY; curl.exe -sS -m 20 https://api.github.com/`
+   —— 每次 `pwsh` 调用都是新进程，`$env:` 不会污染全局。
+   **必须写 `curl.exe`**：Windows PowerShell 里 `curl` 是 `Invoke-WebRequest` 的别名，参数完全不同，直接写会报参数错。
+6. 若环境给的是 bash（Git Bash / WSL），换成 bash 写法即可，配置路径照样可用。
+
 提示词还写死了四条约束，避免 agent 帮倒忙：
 
 - 代理 URL 只认 `http://` / `https://`。DSH 进程内的 fetch 不支持 SOCKS，`socks5://` 只对 `curl`、`git`
   这类子进程有效。
 - DSH 自己的 `web_fetch` / `web_search` 在进程启动时读一次环境变量，运行期改了没用。这类请求超时就改用
   `bash` 里带代理前缀的 `curl` 自己去取。
-- 想让代理对 DSH 全局长期生效，唯一正规做法是写 `$DSH_HOME/.env`（通常 `~/.dsh/.env`）再重启；
-  这一步会改变整个进程的出网路线，**必须先问用户**。
+- 想让代理对 DSH 全局长期生效，唯一正规做法是写 `$DSH_HOME/.env`（通常 `~/.dsh/.env`，
+  Windows 上是 `%USERPROFILE%\.dsh\.env`）再重启；这一步会改变整个进程的出网路线，**必须先问用户**。
 - 端口来自实测，不要照抄示例里的 7897。
 
 ## 安装
@@ -61,6 +85,9 @@ plugin_manager install_bundle target="git+https://github.com/iShawnWang/dsh-mark
 ## 兼容性
 
 `engines.dsh`: `>=0.2.2-rc.1 <0.3.0-0`。依赖 `systemPrompt` 服务的 `section()` 接口。
+
+macOS、Linux、Windows 都支持。提示词按 `process.platform` 分叉：POSIX 上给 bash 写法，
+Windows 上给 PowerShell 写法（`Test-NetConnection`、`curl.exe`、受限语言模式下可用的 cmdlet）。
 
 ## 许可
 
