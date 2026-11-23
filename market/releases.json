@@ -18,5 +18,15 @@
       },
       "commit": "68b085fd076cf8c8488d518d7cf89e2794b2c541"
     }
+  ],
+  "dsh-auto-proxy": [
+    {
+      "version": "0.2.0",
+      "publishTimestamp": 1795403303,
+      "engines": {
+        "dsh": ">=0.2.2-rc.1 <0.3.0-0"
+      },
+      "commit": "1fae23ce9db6e0b495605d24bda21bc5fe9de4be"
+    }
   ]
 }
