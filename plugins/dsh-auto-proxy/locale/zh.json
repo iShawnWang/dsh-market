@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "本地代理兜底",
+    "description": "网络超时后告诉 agent 去本机找 Clash、Mihomo、V2Ray 之类代理的端口，用临时环境变量重试；默认仍直连。",
+    "detail": "README.md"
+  }
+}

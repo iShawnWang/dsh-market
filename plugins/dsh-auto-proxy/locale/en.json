@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "Local proxy fallback",
+    "description": "When a network call times out, tells the agent to find a local Clash/Mihomo/V2Ray proxy port and retry through it; direct access stays the default.",
+    "detail": "README.md"
+  }
+}

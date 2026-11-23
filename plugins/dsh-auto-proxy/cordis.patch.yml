@@ -1,0 +1,7 @@
+# Bundle patch layer of dsh-auto-proxy.
+#
+# One loader entry, host half only: the plugin has no browser module, so the
+# package name alone is enough. Everything it does is one system-prompt section.
+- insert:
+    - id: dsh-auto-proxy
+      name: dsh-auto-proxy

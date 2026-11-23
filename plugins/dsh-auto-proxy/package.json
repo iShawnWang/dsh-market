@@ -1,0 +1,46 @@
+{
+  "name": "dsh-auto-proxy",
+  "version": "0.2.0",
+  "private": false,
+  "type": "module",
+  "description": "网络失败时才用的本地代理兜底：给 agent 注入一段提示词，直连超时后再去找 Clash、Clash Verge、V2Ray 之类本机代理的端口，用临时环境变量重试。",
+  "license": "MIT",
+  "main": "lib/index.js",
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "proxy",
+    "clash",
+    "network",
+    "prompt"
+  ],
+  "exports": {
+    ".": "./lib/index.js",
+    "./icon": "./icon.svg",
+    "./locale/*.json": "./locale/*.json",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "locale",
+    "icon.svg",
+    "cordis.patch.yml",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18",
+    "dsh": ">=0.2.2-rc.1 <0.3.0-0"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "author": "iShawnWang",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/iShawnWang/dsh-market.git",
+    "directory": "plugins/dsh-auto-proxy"
+  },
+  "homepage": "https://github.com/iShawnWang/dsh-market"
+}

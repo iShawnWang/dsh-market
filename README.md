@@ -20,6 +20,7 @@
 | --- | --- | --- | --- | --- |
 | [dsh-plugin-hello](plugins/dsh-plugin-hello/README.md) | 示例插件：左侧边栏新增一个标签，点击后主区域居中显示 `Hello dsh-plugin` | 平台 | 示例 | 0.2.0 |
 | [dsh-plugin-yq-release](plugins/dsh-plugin-yq-release/README.md) | 一句话把分支发到测试环境：自动合并 GitLab、发布 Spug 前端或触发小程序构建，并记录每次发布 | 发布部署 | 发版、内网 | 0.2.0 |
+| [dsh-auto-proxy](plugins/dsh-auto-proxy/README.md) | 网络超时后才提示 agent 去本机找 Clash、Mihomo、V2Ray 之类代理的端口重试，默认仍直连 | 工具 | 实验 | 0.2.0 |
 
 ## 新增修改插件
 

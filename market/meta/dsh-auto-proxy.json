@@ -1,0 +1,28 @@
+{
+  "title": {
+    "en": "Local proxy fallback",
+    "zh-cn": "本地代理兜底"
+  },
+  "description": {
+    "en": "Injects one prompt section: direct access stays the default, and only after a network call actually fails should the agent look for a local Clash/Mihomo/V2Ray proxy port and retry through it with a temporary environment variable.",
+    "zh-cn": "注入一段提示词：默认直连，只有请求真的失败后，才去找本机 Clash、Mihomo、V2Ray 之类代理的端口，用临时环境变量重试。"
+  },
+  "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+CiAgPHBhdGggZD0iTTkuMiAzLjR2My4xTTE0LjggMy40djMuMSIgc3Ryb2tlPSIjN0M4Q0Y4IiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CiAgPHBhdGggZD0iTTYuNiA2LjVoMTAuOHYzLjdhNS40IDUuNCAwIDAgMS0xMC44IDBWNi41WiIgc3Ryb2tlPSIjN0M4Q0Y4IiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDxwYXRoIGQ9Ik0xMiAxNS42djIuNGEyLjYgMi42IDAgMCAxLTIuNiAyLjZINi40IiBzdHJva2U9IiM3QzhDRjgiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPC9zdmc+Cg==",
+  "category": "tools",
+  "labels": [
+    "experimental"
+  ],
+  "keywords": [
+    "proxy",
+    "clash",
+    "mihomo",
+    "v2ray",
+    "network",
+    "timeout",
+    "prompt"
+  ],
+  "repository": {
+    "url": "https://github.com/iShawnWang/dsh-market",
+    "directory": "plugins/dsh-auto-proxy"
+  }
+}
