@@ -21,6 +21,14 @@
   ],
   "dsh-auto-proxy": [
     {
+      "version": "0.3.0",
+      "publishTimestamp": 1795423949,
+      "engines": {
+        "dsh": ">=0.2.2-rc.1 <0.3.0-0"
+      },
+      "commit": "a6a5703e2dce23d5a61014db1622fda2e31dbc0e"
+    },
+    {
       "version": "0.2.1",
       "publishTimestamp": 1795403603,
       "engines": {
