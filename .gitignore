@@ -1,1 +1,4 @@
 node_modules/
+
+# dsh-auto-proxy 的记忆文件，由 agent 在运行时写入，不纳入版本管理
+plugins/dsh-auto-proxy/dsh-auto-proxy.txt

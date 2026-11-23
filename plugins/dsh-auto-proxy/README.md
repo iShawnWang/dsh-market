@@ -1,71 +1,76 @@
 # dsh-auto-proxy
 
-网络失败时，让 agent 自己去本机找一个能用的代理端口，而不是对着超时干瞪眼。
+网络失败时，提醒 agent「本机可能开着代理」——而不是对着超时反复重试或直接放弃。
 
 这是一个**纯提示词插件**：没有工具、没有页面、没有浏览器端代码，也不改任何运行时设置。
-它只往系统提示词里加一段说明——**默认直连**，只有请求真的失败以后才去排查本机代理。
+它往系统提示词里加一段很短的说明，另外留一个文本文件，让不同会话之间能传递「这台机器上试通过哪些代理」。
 
 ## 为什么需要它
 
 DSH 调 GitHub、Google 之类境外 API 时经常超时。多数人的机器上其实开着 Clash 或 Clash Verge，
-但代理只配置在代理软件自己的设置里，DSH 进程不一定继承得到 `https_proxy`。
-不懂情况的 agent 往往会：直接放弃、反复重试同一条死路、或者擅自 `export https_proxy=...`
-塞进全局环境——最后一种最讨厌，会把本来正常的国内请求也一起带上代理。
-
-这个插件给 agent 定了一条明确的纪律：先直连，失败了再按步骤找代理，找到后**只给这一条命令挂前缀**。
+但代理只配置在代理软件自己的设置里，DSH 进程不一定继承得到环境变量。
+不懂情况的 agent 往往直接放弃，或者擅自 `export https_proxy=...` 塞进全局环境——后者更麻烦，
+会把本来正常的国内请求也一起带上代理。
 
 ## 装上之后会发生什么
 
-插件向系统提示词注入一节 `## 网络访问：先直连，失败后再找本地代理`（`order: 950`，
-排在 shell 工具说明之前）。内容是**按平台分叉**的一份排查顺序——macOS / Linux 拿到 bash 版，
-Windows 拿到 PowerShell 版，模型不会看到自己跑不了的命令。
+系统提示词里多出一节 `## 网络访问：先直连，失败后再考虑本地代理`（`order: 950`），
+说的是：默认直连，只有请求确实失败时，才把「本机可能开着代理」当成一个可能原因。
+具体怎么查、用哪个端口、怎么挂，交给 agent 当场判断——写死在提示词里只会固化成某一台机器的布局。
 
-### macOS / Linux（bash）
+同时会在插件目录下放一个 `dsh-auto-proxy.txt`，并告诉 agent 路径：
 
-1. `env | grep -i proxy` —— 环境变量里已经有了就直接用。
-2. `scutil --proxy`（macOS）—— 读系统代理里 `HTTPProxy` / `HTTPSProxy` / `SOCKSProxy` 的端口；
-   Linux 用 `gsettings get org.gnome.system.proxy.http port`。
-3. 探常用端口 —— `nc -z -G 1 127.0.0.1 <port>` 遍历 `7890 7897 7891 1080 1087 10808 10809 6152 8080 8888`
-   （Linux 上把 `-G` 换成 `-w`），再 `lsof -nP -iTCP -sTCP:LISTEN | grep -iE 'clash|mihomo|verge|v2ray|xray|sing-box|surge|tun2socks'` 看谁在听。
-4. 读代理软件自己的配置拿真实端口 —— 端口经常不是默认值，猜不如读：
-   - Clash Verge / Clash Verge Rev：`~/Library/Application Support/io.github.clash-verge-rev.clash-verge-rev/config.yaml` 里的 `mixed-port` / `port` / `socks-port`
-   - Clash / ClashX：`~/.config/clash/config.yaml`
-   - Mihomo：`~/.config/mihomo/config.yaml`
-   - sing-box：`~/.config/sing-box/config.json`
-   - Surge：`~/Library/Application Support/Surge/Profiles/*.conf` 的 `http-listen`
-5. 用前缀只作用于单条命令重试：
-   `https_proxy=http://127.0.0.1:7897 http_proxy=http://127.0.0.1:7897 curl -sS -m 20 https://api.github.com/`
-6. 通了就沿用这组前缀，不通就换下一个端口；全都试不通要如实说"本机没找到可用代理"，而不是无限重试。
+```
+## 网络访问：先直连，失败后再考虑本地代理
+...
+之前的会话可能已经在这台机器上找到过可用的代理，记录在这个文件里：
+`<插件目录>/dsh-auto-proxy.txt`
+失败时先读它。里面有地址就直接拿来试；这次如果又试出一个能用的，把地址追加进去
+（一行一个，无所谓格式，插件不解析内容）。
+```
 
-### Windows（PowerShell）
+这就是**跨会话记忆**的部分。插件**不解析、不校验、不清理过期**这个文件——它只是 agent 的记事本。
+一个会话试通了 `http://127.0.0.1:7897` 就写一行，下一个会话读到就直接用。
 
-DSH 在 Windows 上挂的是 `pwsh` 工具，和 bash 没有命令级翻译，所以这一支整套换成 cmdlet：
+## 那个 txt 到底装到哪去了
 
-1. `Get-ChildItem env: | Where-Object Name -match 'proxy'` —— 环境变量里已经有就直接用。
-2. `Get-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings'` 读
-   `ProxyEnable` / `ProxyServer`（可能是 `127.0.0.1:7897`，也可能是 `http=…;https=…` 的分段写法），
-   再看 `netsh winhttp show proxy`。
-3. 探端口用 `Test-NetConnection 127.0.0.1 -Port $p -InformationLevel Quiet`。
-   **不能用 `New-Object Net.Sockets.TcpClient`**：只读沙箱下 `pwsh` 跑 ConstrainedLanguage，.NET 类型会被拒。
-   看进程用 `Get-Process | Where-Object { $_.ProcessName -match 'clash|mihomo|verge|v2ray|xray|sing-box|surge' }`，
-   端口归属用 `Get-NetTCPConnection -State Listen`。
-4. 配置路径：`$env:APPDATA\io.github.clash-verge-rev.clash-verge-rev\config.yaml`、
-   `$env:USERPROFILE\.config\clash\config.yaml`、`$env:APPDATA\mihomo-party\`、
-   `$env:APPDATA\v2rayN\guiNConfig.json`（看 `inbounds[].port`）、`$env:USERPROFILE\.config\sing-box\config.json`。
-5. 重试时写 `$env:HTTPS_PROXY='http://127.0.0.1:7897'; $env:HTTP_PROXY=$env:HTTPS_PROXY; curl.exe -sS -m 20 https://api.github.com/`
-   —— 每次 `pwsh` 调用都是新进程，`$env:` 不会污染全局。
-   **必须写 `curl.exe`**：Windows PowerShell 里 `curl` 是 `Invoke-WebRequest` 的别名，参数完全不同，直接写会报参数错。
-6. 若环境给的是 bash（Git Bash / WSL），换成 bash 写法即可，配置路径照样可用。
+插件市场安装时，pnpm 用 hoisted 布局，包是**解到 profile 的 `node_modules` 下的真实目录**（不是软链），
+所以记忆文件就在包里，跟着插件一起走：
 
-提示词还写死了四条约束，避免 agent 帮倒忙：
+```
+<DSH_HOME>/profiles/<profile>/node_modules/dsh-auto-proxy/dsh-auto-proxy.txt
+```
 
-- 代理 URL 只认 `http://` / `https://`。DSH 进程内的 fetch 不支持 SOCKS，`socks5://` 只对 `curl`、`git`
-  这类子进程有效。
-- DSH 自己的 `web_fetch` / `web_search` 在进程启动时读一次环境变量，运行期改了没用。这类请求超时就改用
-  `bash` 里带代理前缀的 `curl` 自己去取。
-- 想让代理对 DSH 全局长期生效，唯一正规做法是写 `$DSH_HOME/.env`（通常 `~/.dsh/.env`，
-  Windows 上是 `%USERPROFILE%\.dsh\.env`）再重启；这一步会改变整个进程的出网路线，**必须先问用户**。
-- 端口来自实测，不要照抄示例里的 7897。
+拿本机举例（`DSH_HOME=/Users/qckj/.dsh`，profile 叫 `desktop`）：
+
+```
+/Users/qckj/.dsh/profiles/desktop/node_modules/dsh-auto-proxy/dsh-auto-proxy.txt
+```
+
+Windows 上同一台机器换掉主目录前缀即可：
+
+```
+C:\Users\<用户名>\.dsh\profiles\desktop\node_modules\dsh-auto-proxy\dsh-auto-proxy.txt
+```
+
+不用猜——提示词里写的就是**当前这份安装解析出来的绝对路径**。插件启动时用
+`import.meta.url` 反推出自己的包目录，再 `realpathSync` 解析符号链接（沙箱授权要求物理路径，
+软链目录会被拒）。所以：
+
+| 安装方式 | 包目录 | txt 文件位置 |
+|---|---|---|
+| 插件市场 / `git+https://` | `<DSH_HOME>/profiles/desktop/node_modules/dsh-auto-proxy/` | 该目录下 `dsh-auto-proxy.txt` |
+| 本地 `link:` 开发 | 软链到你的仓库目录 | 仓库里的 `plugins/dsh-auto-proxy/dsh-auto-proxy.txt` |
+
+两种方式下提示词里的路径都是对的，因为它们走的是同一个 `realpathSync`。
+
+## 写权限是怎么解决的
+
+插件装在 `node_modules/` 下，在会话工作区之外，沙箱默认**不允许 agent 写那里**。
+所以插件在每个 agent 创建时调用 `ctx.sandboxPolicy.registerWritableRoot(session, 插件目录)`，
+只把这一个目录授权出去。
+
+这个授权是运行时状态，resume 或 fork 之后不保留，所以插件对每个新出现的 agent 都重新登记一次。
 
 ## 安装
 
@@ -78,16 +83,17 @@ plugin_manager install_bundle target="git+https://github.com/iShawnWang/dsh-mark
 ## 不做什么
 
 - 不注册任何工具，不占用工具名额。
-- 不监听 session 或网络事件，不主动探测代理（探测只发生在 agent 读提示词并决定执行的时候）。
-- 不改 `process.env`，不写任何配置文件——`~/.dsh/.env` 只会在提示词里被"建议"，由用户拍板。
+- 不监听网络事件，不主动探测代理。
+- 不解析、不校验记忆文件的内容，也不管里面的记录是否过期。
+- 不改 `process.env`，不写任何配置文件——`~/.dsh/.env` 只会在提示词里被「建议」，由用户拍板。
 - 没有浏览器端，侧边栏不会多出任何东西。
 
 ## 兼容性
 
-`engines.dsh`: `>=0.2.2-rc.1 <0.3.0-0`。依赖 `systemPrompt` 服务的 `section()` 接口。
+`engines.dsh`: `>=0.2.2-rc.1 <0.3.0-0`。依赖 `systemPrompt` 和 `sandboxPolicy` 两个服务。
 
-macOS、Linux、Windows 都支持。提示词按 `process.platform` 分叉：POSIX 上给 bash 写法，
-Windows 上给 PowerShell 写法（`Test-NetConnection`、`curl.exe`、受限语言模式下可用的 cmdlet）。
+提示词不含任何平台专属命令，macOS、Linux、Windows 通用。记忆文件随插件目录走，
+重装或升级插件时从头开始积累。
 
 ## 许可
 

@@ -1,9 +1,9 @@
 {
   "name": "dsh-auto-proxy",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "private": false,
   "type": "module",
-  "description": "网络失败时才用的本地代理兜底：给 agent 注入一段提示词，直连超时后再去找 Clash、Clash Verge、V2Ray 之类本机代理的端口，用临时环境变量重试。",
+  "description": "网络失败时才用的本地代理兜底：给 agent 注入一段提示词，直连失败后再考虑本机代理，并用插件目录下的文本文件跨会话记住试通过的代理地址。",
   "license": "MIT",
   "main": "lib/index.js",
   "keywords": [
