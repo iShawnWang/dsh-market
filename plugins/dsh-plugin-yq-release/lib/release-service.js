@@ -362,11 +362,6 @@ export class ReleaseService {
         record('spug-wait', 'ok', `发布成功（${status.status_alias ?? '完成'}）`);
       } else if (planned.provider === 'qqc') {
         const qqc = new QqcClient({ baseUrl: config.qqcBaseUrl, fetchImpl: this.fetchImpl });
-        await qqc.probe({
-          attempts: config.qqcProbeAttempts ?? 3,
-          onProgress: (line) => record('qqc-probe', 'running', line),
-        });
-        record('qqc-probe', 'ok', '构建机在线');
 
         const token = await resolveSecret(this, CREDENTIAL_REFS.gitlabToken, { required: true });
         const gitlab = new GitLabClient({
@@ -399,7 +394,31 @@ export class ReleaseService {
               ? (mergeResult.message ?? '无需合并')
               : `已合并 !${mergeResult.mrIid}`,
           );
+          commitId = mergeResult.commitId ?? undefined;
         }
+
+        // Identify the base commit before probing: when the build box is off,
+        // the result still says what was merged and what it would have built.
+        if (!commitId) {
+          const head = await gitlab.readTargetCommit(projectId, planned.targetBranch, (line) =>
+            record('commit', 'running', line),
+          );
+          commitId = head?.id;
+        }
+        record(
+          'commit',
+          'ok',
+          `构建基准提交 ${commitId ? short(commitId) : '未知'}（${planned.targetBranch}）`,
+        );
+
+        // Probe only after the merge: merging is seconds, probing a box that is
+        // usually switched off is not. A dead build box must never swallow a
+        // merge that already could have landed.
+        await qqc.probe({
+          attempts: config.qqcProbeAttempts ?? 3,
+          onProgress: (line) => record('qqc-probe', 'running', line),
+        });
+        record('qqc-probe', 'ok', '构建机在线');
 
         const enqueued = await qqc.triggerBuild({
           project: planned.chainConfig.qqcProject,
@@ -453,7 +472,7 @@ export class ReleaseService {
         }
         // The trigger response reports the head it saw before pulling; the log
         // is the only authoritative source for what was actually built.
-        commitId = parsed.commit ?? mergeResult?.commitId;
+        commitId = parsed.commit ?? commitId;
         record(
           'qqc-wait',
           'ok',

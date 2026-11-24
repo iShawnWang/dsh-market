@@ -1,6 +1,6 @@
 {
   "name": "dsh-plugin-yq-release",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": false,
   "type": "module",
   "description": "YQ-前端发布：把「把 feat/h5-xxx 发到测试」变成一句话，自动完成 GitLab 合并、Spug 前端发布与小程序构建。",
@@ -26,7 +26,8 @@
     "locale",
     "icon.svg",
     "cordis.patch.yml",
-    "README.md"
+    "README.md",
+    "docs"
   ],
   "engines": {
     "node": ">=18",
