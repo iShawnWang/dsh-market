@@ -1,7 +1,7 @@
 // dsh-plugin-yq-release — browser half.
 //
 // One sidebar tab that mirrors what the agent tools already did: the release
-// chains this machine knows about, the recent runs, the ledger, and the three
+// chains this machine knows about, the recent runs, the build memory, and the three
 // credentials the pipeline needs. The panel never performs a release itself —
 // releasing stays a conversation action, because a release is a decision with a
 // branch name attached, not a button.
@@ -323,7 +323,7 @@ window.__ModuleLoader__.load({
 
     /**
      * An ISO instant rendered as local wall-clock time.
-     * The ledger stores UTC (`...Z`); slicing that string would print `07:26`
+     * The build memory stores UTC (`...Z`); slicing that string would print `07:26`
      * for a 15:26 release, so the instant is converted into the viewer's own
      * time zone before formatting.
      * @param {string} [iso] - ISO 8601 timestamp.
@@ -434,7 +434,7 @@ window.__ModuleLoader__.load({
 
     /**
      * One release chain row: how the chain is configured, plus the last attempt
-     * the ledger knows about. The history list further down is chronological;
+     * the build memory knows about. The history list further down is chronological;
      * this row answers the narrower question "is this target currently green".
      * @param {object} props - component props.
      * @returns {object} element.

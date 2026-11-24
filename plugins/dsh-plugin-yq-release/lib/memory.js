@@ -1,9 +1,9 @@
 /**
- * Release memory: an append-only JSONL ledger of what was released, when, with
+ * Release memory: an append-only JSONL build-memory file of what was released, when, with
  * which commit, and how it ended.
  *
  * Two rules:
- *  - the ledger is history, not policy; it is only ever appended to, and failed
+ *  - the build memory is history, not policy; it is only ever appended to, and failed
  *    or blocked attempts are recorded too. Nothing is rewritten or pruned.
  *  - it starts empty and only ever grows from releases this plugin ran itself.
  *    Nothing is imported from other tools, so a record here always means the
@@ -14,11 +14,11 @@ import { appendFile, mkdir, readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { homedir } from 'node:os';
 
-/** Default ledger location. */
+/** Default build-memory location. */
 export const DEFAULT_MEMORY_FILE = join(homedir(), '.dsh', 'yq-release', 'releases.jsonl');
 
 /**
- * Expand a leading `~` and resolve the ledger path.
+ * Expand a leading `~` and resolve the build-memory path.
  * @param {string} [configured] - configured path, possibly empty.
  * @returns {string} absolute path.
  */
@@ -31,12 +31,12 @@ export function resolveMemoryFile(configured) {
 }
 
 /**
- * Append-only release ledger.
+ * Append-only release build memory.
  */
 export class ReleaseMemory {
   /**
-   * @param {object} options - ledger options.
-   * @param {string} options.file - ledger path.
+   * @param {object} options - build-memory options.
+   * @param {string} options.file - build-memory path.
    * @param {() => number} [options.now] - clock, injectable for tests.
    */
   constructor({ file, now = Date.now }) {
@@ -46,7 +46,7 @@ export class ReleaseMemory {
 
   /**
    * Load every record, oldest first. Unparseable lines are skipped rather than
-   * throwing: a hand-edited ledger must not take the whole panel down.
+   * throwing: a hand-edited build memory must not take the whole panel down.
    * @returns {Promise<Array<object>>} records.
    */
   async readAll() {
@@ -58,7 +58,7 @@ export class ReleaseMemory {
       try {
         records.push(JSON.parse(trimmed));
       } catch {
-        // Ignore a damaged line; the rest of the ledger is still usable.
+        // Ignore a damaged line; the rest of the build memory is still usable.
       }
     }
     return records;
@@ -100,10 +100,10 @@ export class ReleaseMemory {
    * The newest record for each chain, keyed `projectId/chainId`.
    *
    * A chain row in the panel answers "what does this target look like right
-   * now", which the ledger already knows: the last attempt on it. Records are
+   * now", which the build memory already knows: the last attempt on it. Records are
    * scanned in file order and compared by timestamp, so a hand-appended line
    * out of order still loses to a genuinely later one.
-   * @param {Array<object>} [records] - already-read ledger, to avoid a second read.
+   * @param {Array<object>} [records] - already-read build memory, to avoid a second read.
    * @returns {Promise<Map<string, object>>} newest record per chain.
    */
   async latestByChain(records) {

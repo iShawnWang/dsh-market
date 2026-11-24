@@ -39,10 +39,10 @@ export const Config = z.object({
 /**
  * Effective project registry. The plugin ships no project of its own: entries
  * come from `config.projects`, plus every chain a previous release left in the
- * ledger. A fresh install therefore releases nothing until either the registry
+ * build memory. A fresh install therefore releases nothing until either the registry
  * is configured or one release has been run explicitly.
  * @param {object} config - resolved plugin config.
- * @param {Array<object>} [records] - release ledger, newest last.
+ * @param {Array<object>} [records] - build memory, newest last.
  * @returns {Record<string, object>} effective project registry.
  */
 export function resolveProjects(config, records = []) {
@@ -67,7 +67,7 @@ export function resolveProjects(config, records = []) {
       chains: {},
     };
     // Config wins: a chain the user wrote down is never overwritten by one the
-    // ledger inferred, so an explicit definition always stays authoritative.
+    // build memory inferred, so an explicit definition always stays authoritative.
     if (project.chains[learned.chainId]) continue;
     project.chains = { ...project.chains, [learned.chainId]: learned.chain };
     merged[learned.projectId] = project;
@@ -77,10 +77,10 @@ export function resolveProjects(config, records = []) {
 
 /**
  * Rebuild chains from what previous releases actually did. A learned chain is
- * `explicitOnly`: it is never inferred from a branch name, because the ledger
+ * `explicitOnly`: it is never inferred from a branch name, because the build memory
  * records what was released, not which branch prefixes should select it. Name
  * the project or the chain and it resolves.
- * @param {Array<object>} [records] - release ledger.
+ * @param {Array<object>} [records] - build memory.
  * @returns {Array<{projectId: string, chainId: string, chain: object}>} learned chains.
  */
 export function learnedChains(records = []) {

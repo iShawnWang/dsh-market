@@ -32,7 +32,7 @@ const MAX_JSON_BODY_BYTES = 64 * 1024;
  * @param {object} config - resolved plugin config.
  */
 export function apply(ctx, config) {
-  // A brand-new ledger, empty by design. This plugin has no history to inherit:
+  // A brand-new build memory, empty by design. This plugin has no history to inherit:
   // every record it shows was created by a release it ran itself.
   const memory = new ReleaseMemory({ file: resolveMemoryFile(config.memoryFile) });
 
@@ -50,7 +50,7 @@ export function apply(ctx, config) {
  * Register the agent tools.
  * @param {object} ctx - plugin context.
  * @param {ReleaseService} service - release pipeline.
- * @param {ReleaseMemory} memory - release ledger.
+ * @param {ReleaseMemory} memory - build memory.
  */
 function registerTools(ctx, service, memory) {
   ctx.inject(['tools'], (sctx) => {
@@ -227,7 +227,7 @@ function registerTools(ctx, service, memory) {
  * read or write anything.
  * @param {object} ctx - plugin context.
  * @param {ReleaseService} service - release pipeline.
- * @param {ReleaseMemory} memory - release ledger.
+ * @param {ReleaseMemory} memory - build memory.
  * @param {object} config - plugin config.
  */
 function registerBridge(ctx, service, memory, config) {
@@ -237,10 +237,10 @@ function registerBridge(ctx, service, memory, config) {
         makeRoute(ctx, '/state', async () => {
           const live = readConfig(config);
           // The registry is config plus whatever past releases taught it, so it
-          // has to be read from the ledger rather than from a constant.
+          // has to be read from the build memory rather than from a constant.
           const projects = await resolveProjectsSafe(live, memory);
           // A chain row answers "what does this target look like now", and the
-          // ledger is the only place that knows: show each chain's last attempt
+          // build memory is the only place that knows: show each chain's last attempt
           // beside its configuration, not only in the history list below.
           const latest = await memory.latestByChain();
           return {
@@ -762,7 +762,7 @@ function renderPlan(value) {
 
 /**
  * An ISO instant rendered as local wall-clock time.
- * The ledger stores UTC (`...Z`); slicing that string would print `07:26` for
+ * The build memory stores UTC (`...Z`); slicing that string would print `07:26` for
  * a 15:26 release, so the instant is converted to the host's time zone first.
  * @param {string} [iso] - ISO 8601 timestamp.
  * @returns {string} `YYYY-MM-DD HH:MM:SS`, or '' when unusable.

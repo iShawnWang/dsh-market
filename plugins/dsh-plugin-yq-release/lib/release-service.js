@@ -90,7 +90,7 @@ export class ReleaseService {
    * @param {object} options - construction options.
    * @param {() => object} options.getConfig - reads the live plugin config.
    * @param {() => object|undefined} options.getCredentials - reads the credentials service.
-   * @param {import('./memory.js').ReleaseMemory} options.memory - release ledger.
+   * @param {import('./memory.js').ReleaseMemory} options.memory - build memory.
    * @param {typeof fetch} [options.fetchImpl] - injectable fetch.
    * @param {() => number} [options.now] - clock.
    */
@@ -596,7 +596,7 @@ export class ReleaseService {
   }
 
   /**
-   * Assemble the result and append it to the ledger. Bookkeeping never changes
+   * Assemble the result and append it to the build memory. Bookkeeping never changes
    * the reported status: a failed write is attached as a warning instead.
    * @param {object} options - result fields.
    * @returns {Promise<object>} the result handed to tool and panel callers.
@@ -627,12 +627,12 @@ export class ReleaseService {
 }
 
 /**
- * Build the ledger record for one attempt. The field names are stable on
- * purpose: older records in an existing ledger stay readable next to new ones.
+ * Build the build memory record for one attempt. The field names are stable on
+ * purpose: older records in an existing build memory stay readable next to new ones.
  * @param {object} result - release result.
  * @param {object} input - original request.
  * @param {object} planned - resolved plan.
- * @returns {object} ledger record.
+ * @returns {object} build-memory record.
  */
 function buildRecord(result, input, planned) {
   const application =
@@ -640,7 +640,7 @@ function buildRecord(result, input, planned) {
   return {
     project: planned.project,
     source_branch: input.branch ?? null,
-    // The chain snapshot is what turns the ledger into the registry: a later
+    // The chain snapshot is what turns the build memory into the registry: a later
     // run with no built-in project table can rebuild this target from here.
     chain: {
       id: planned.chain,
@@ -721,7 +721,7 @@ function describeActions({ chain, skipMerge }) {
  * The registry is only built from config plus past releases, so the very first
  * release of a project has nothing to match against. When the caller spells out
  * the target branch and provider, that definition stands for this run and is
- * written to the ledger, which makes it available next time.
+ * written to the build memory, which makes it available next time.
  * @param {object} options - inputs.
  * @param {Record<string, object>} options.projects - registry.
  * @param {object} options.input - release request.
@@ -750,9 +750,9 @@ function resolveTarget({ projects, input }) {
 }
 
 /**
- * Effective project registry from the live config plus the release ledger.
+ * Effective project registry from the live config plus the build memory.
  * @param {object} config - plugin config.
- * @param {object} [memory] - release ledger, read for learned chains.
+ * @param {object} [memory] - build memory, read for learned chains.
  * @returns {Promise<Record<string, object>>} registry.
  */
 export async function resolveProjectsSafe(config, memory) {

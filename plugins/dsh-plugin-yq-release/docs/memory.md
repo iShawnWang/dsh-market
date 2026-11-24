@@ -7,7 +7,7 @@
 两条腿的耗时差了一个数量级，顺序错了就会白等：
 
 - **合并**走 GitLab MR，正常几秒：建单 → 轮询 `merge_status`（`checking` → `can_be_merged`，最多 15 次 × 2s ≈ 30s）→ 合并 → 读目标分支新提交。
-- **小程序构建**第一步是探活构建机：3 次尝试、单次 5s 超时、失败间隔 1s / 3s，最坏 ≈ 20s 就该下结论。这台机器用完会关机，连不上是常态而不是故障。
+- **小程序构建**第一步是探活构建机：3 次尝试、单次 5s 超时、失败间隔 1s / 3s，最坏 ≈ 20s 就该下结论。构建机平时会关机、地址也可能变，连不上是常态而不是故障。
 
 历史问题（已修）：早先 qqc 分支把 `qqc.probe()` 放在 `gitlab.merge()` **之前**，构建机一关机就整个请求以 `BUILD_HOST_OFFLINE` 结束，连合并都不会发生 —— 而合并本来几秒就能做完、也不依赖构建机。现在的顺序是 **合并 → 读基准提交 → 探活 → 触发构建**，构建机离线时合并照样落地，只有最后一步报 `blocked`。
 
@@ -19,7 +19,7 @@
 
 - DSH 进程在启动时把插件模块读进内存，之后改磁盘上的 `lib/*.js` **不会生效**。
 - 判断方法：在怀疑没生效的函数里临时插一行写文件或打日志，跑一次看有没有输出。没有输出，说明跑的还是旧模块，**不是**新写的逻辑有错。
-- 重载方式：把插件条目关掉再打开（`plugin_manager` 的 target 要写 profile 里的 entryId，本机是 `include:yq-release`；写裸 `yq-release` 会报 `unknown-plugin`）。只重载这个插件比重启整个 DSH 便宜得多。
+- 重载方式：把插件条目关掉再打开（`plugin_manager` 的 target 要写 profile 里的 entryId，也就是 `cordis.patch.yml` 里那条的 `id`；写裸包名会报 `unknown-plugin`）。只重载这个插件比重启整个 DSH 便宜得多。
 - 只有源码文件需要重载。`gitlabEndpoint` / `spugBaseUrl` / `qqcBaseUrl` 是 `.volatile()` 配置项，改完即时生效。
 
 ## 三、链路解析的三个坑
@@ -40,11 +40,11 @@
 
 三种情况都不需要继续找：开机的解决办法是把机器连回来或改 `qqcBaseUrl`，插件只能报 blocked，不会自己等。
 
-构建机的项目别名（`qqc` / `乔乔车` / `car` / `养车`）由构建机自己解析，插件原样透传。
+构建机的项目别名（如 `qqc` / `mp` / `养车`）由构建机自己解析，插件原样透传。
 
-## 五、构建Memory里的记录 ≠ 插件跑通过
+## 五、构建Memory里的条目 ≠ 插件跑通过
 
-记录是追加写的历史事实，早期会混进「事后补记」的条目（`note` 里会写明那次其实是手工点的发布）。判断一次发布是否真走了插件，看这几个字段：
+构建Memory是追加写的历史事实，早期会混进「事后补记」的条目（`note` 里会写明那次其实是手工点的发布）。判断一次发布是否真走了插件，看这几个字段：
 
 - `code` 是 `OK`；
 - 有 `spug_request_id`（Spug 链路）或非空 `commit_id`；
@@ -65,8 +65,8 @@
 | `QQC_BUILD_FAILED` | 构建日志里没有 `Build successful` | 看返回的日志尾巴 |
 | `PROD_CONFIRMATION_REQUIRED` | 发线上要再确认一次 | 带 `confirmProd=true` 重试 |
 
-## 七、本机环境备忘
+## 七、环境备忘
 
-- **node 不在 PATH 里**（nvm 装的那个）。直接跑 `node scripts/...` 会 `command not found`，先 `export PATH="$HOME/.nvm/versions/node/<版本>/bin:$PATH"`。
-- 凭据统一走 DSH 凭据库（`GITLAB_ACCESS_TOKEN` / `SPUG_USERNAME` / `SPUG_PASSWORD`），插件不读 `gitlab-skill` / `spug-skill` 留下的 `.env`，所以别的工具留在磁盘上的密钥不会替用户发版。
+- **node 可能不在 PATH 里**（用 nvm / fnm 之类版本管理器装的常见）。跑脚本前先确认 `node -v` 能出来，出不来就先把对应版本的 bin 目录加进 `PATH`。
+- 凭据统一走 DSH 凭据库（`GITLAB_ACCESS_TOKEN` / `SPUG_USERNAME` / `SPUG_PASSWORD`），插件不读任何别的工具留在磁盘上的 `.env`，所以别的工具留下的密钥不会替用户发版。
 - 想直接调 provider 验证接口时，`lib/providers/*.js` 都可以单独 import（ESM）：`new GitLabClient({ endpoint, token }).merge({...})`、`new SpugClient({ baseUrl }).login(...)`、`new QqcClient({ baseUrl }).probe()`。这样验证的是插件自己的代码路径，而不是另写一个 curl。

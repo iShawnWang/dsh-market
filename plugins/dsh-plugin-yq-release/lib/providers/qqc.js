@@ -83,7 +83,7 @@ export class QqcClient {
     }
     throw new BuildBlockedError(
       `构建机 ${this.baseUrl} 连不上（探活 ${total} 次均失败）：${lastError?.message ?? 'unknown'}。` +
-        '这台机器用完会关机，请先把它开机，或检查地址是否又变了。',
+        '请先确认构建机已开机，或检查配置里的地址是否又变了。',
       { baseUrl: this.baseUrl, attempts: total },
     );
   }

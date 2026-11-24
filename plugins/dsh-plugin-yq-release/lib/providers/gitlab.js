@@ -2,9 +2,9 @@
  * GitLab REST v4 client for the release chains: project/branch lookup, merge
  * request creation, conflict detection, and merge execution.
  *
- * The merge flow mirrors the reviewed `gitlab-skill` behaviour, with one rule
- * made stricter: a conflict aborts the whole release with a typed error. This
- * module never resolves conflicts and never force-merges.
+ * The merge flow is deliberately narrow, with one rule enforced everywhere: a
+ * conflict aborts the whole release with a typed error. This module never
+ * resolves conflicts and never force-merges.
  */
 
 /** A merge could not proceed because the source and target conflict. */
