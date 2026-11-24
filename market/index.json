@@ -143,6 +143,19 @@
       },
       "versions": [
         {
+          "version": "0.3.1",
+          "publishTimestamp": 1795486235,
+          "source": {
+            "type": "git",
+            "url": "https://ghfast.top/github.com/iShawnWang/dsh-market",
+            "commit": "16fe3e28fd0274c61e38b71abd96b513f8b90717",
+            "path": "plugins/dsh-plugin-yq-release"
+          },
+          "engines": {
+            "dsh": ">=0.2.2-rc.1 <0.3.0-0"
+          }
+        },
+        {
           "version": "0.3.0",
           "publishTimestamp": 1795485101,
           "source": {
