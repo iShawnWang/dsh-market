@@ -68,5 +68,15 @@
       },
       "commit": "1fae23ce9db6e0b495605d24bda21bc5fe9de4be"
     }
+  ],
+  "dsh-plugin-zentao": [
+    {
+      "version": "0.1.0",
+      "publishTimestamp": 1795514382,
+      "engines": {
+        "dsh": ">=0.2.2-rc.1 <0.3.0-0"
+      },
+      "commit": "b6916bba38b1e1b7d84aa8728d8a58e1a6632161"
+    }
   ]
 }
