@@ -1,0 +1,8 @@
+# Bundle patch layer of dsh-plugin-zentao.
+#
+# One loader entry: the package name is enough, because the browser half is
+# picked up by dsh-client-modules through the package's `dsh.client`
+# declaration and `exports["./client"]`, exactly like the shipped ui-* packages.
+- insert:
+    - id: zentao
+      name: dsh-plugin-zentao

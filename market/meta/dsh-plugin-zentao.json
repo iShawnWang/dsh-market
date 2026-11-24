@@ -1,0 +1,26 @@
+{
+  "title": {
+    "en": "ZenTao",
+    "zh-cn": "禅道"
+  },
+  "description": {
+    "en": "Read the bugs assigned to you inside DSH: list, refresh, and open a bug's detail without leaving the app.",
+    "zh-cn": "在 DSH 侧边栏查看指派给自己的禅道 Bug：列表、刷新，点开就在面板内读详情，不跳出应用。"
+  },
+  "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iOCIgc3Ryb2tlPSIjN0M4Q0Y4IiBzdHJva2Utd2lkdGg9IjEuNiIvPjxwYXRoIGQ9Ik0xMiA4djRsMyAyIiBzdHJva2U9IiM3QzhDRjgiIHN0cm9rZS13aWR0aD0iMS42IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz48L3N2Zz4=",
+  "category": "tools",
+  "labels": [
+    "internal"
+  ],
+  "keywords": [
+    "zentao",
+    "禅道",
+    "bug",
+    "issue",
+    "我的bug"
+  ],
+  "repository": {
+    "url": "https://github.com/iShawnWang/dsh-market",
+    "directory": "plugins/dsh-plugin-zentao"
+  }
+}
