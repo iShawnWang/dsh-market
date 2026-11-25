@@ -175,11 +175,15 @@ window.__ModuleLoader__.load({
   transition: border-color 120ms ease, box-shadow 120ms ease;
   cursor: grab;
 }
+.dsb-card:hover {
+  border-color: color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);
+}
 /* Priority rides on the left edge rather than a dot: a column of cards is
    scanned top to bottom, and an edge is what the eye already follows. The
    accent is a border, not a strip, so it costs no layout.
-   These rules sit after :hover on purpose - the border-color shorthand there
-   would otherwise reset the left edge on the cards you are pointing at. */
+   These rules come after :hover on purpose: border-color is a shorthand and
+   the hover rule would otherwise repaint the left edge grey on the card you
+   are pointing at. border-left-color is longhand, so it wins here. */
 .dsb-card[data-priority] {
   border-left-color: var(--dsb-priority-color, color-mix(in srgb, var(--dsw-alias-label-primary) 9%, transparent));
 }
@@ -187,9 +191,6 @@ window.__ModuleLoader__.load({
 .dsb-card[data-priority="high"] { --dsb-priority-color: var(--dsw-alias-state-warn-primary); }
 .dsb-card[data-priority="medium"] { --dsb-priority-color: var(--dsw-alias-static-amber-400, var(--dsw-alias-state-warn-primary)); }
 .dsb-card[data-priority="low"] { --dsb-priority-color: var(--dsw-alias-static-blue-500, var(--dsw-alias-brand-primary)); }
-.dsb-card:hover {
-  border-color: color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);
-}
 .dsb-card:focus-visible {
   outline: 2px solid var(--dsw-alias-brand-primary);
   outline-offset: 1px;
