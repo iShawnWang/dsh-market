@@ -34,13 +34,6 @@ window.__ModuleLoader__.load({
       { id: 'low', label: '低' },
     ];
 
-    const PRIORITY_COLOR = {
-      urgent: 'var(--dsw-alias-state-error-primary)',
-      high: 'var(--dsw-alias-state-warn-primary)',
-      medium: 'var(--dsw-alias-static-amber-400, var(--dsw-alias-state-warn-primary))',
-      low: 'var(--dsw-alias-static-blue-500, var(--dsw-alias-brand-primary))',
-    };
-
     // ---------------------------------------------------------------- styles
     //
     // One stylesheet, injected once per page. Everything is scoped under .dsb-
@@ -172,11 +165,28 @@ window.__ModuleLoader__.load({
   padding: 10px 12px 11px;
   border-radius: 10px;
   border: 1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 9%, transparent);
+  /* The priority edge is reserved on every card, even the ones without a
+     priority, so titles in a column start on one line instead of stepping in
+     and out by the width of the accent. */
+  border-left-width: 3px;
+  border-left-color: color-mix(in srgb, var(--dsw-alias-label-primary) 9%, transparent);
   background: var(--dsw-alias-bg-layer-2);
   box-shadow: 0 1px 2px color-mix(in srgb, #000 4%, transparent);
   transition: border-color 120ms ease, box-shadow 120ms ease;
   cursor: grab;
 }
+/* Priority rides on the left edge rather than a dot: a column of cards is
+   scanned top to bottom, and an edge is what the eye already follows. The
+   accent is a border, not a strip, so it costs no layout.
+   These rules sit after :hover on purpose - the border-color shorthand there
+   would otherwise reset the left edge on the cards you are pointing at. */
+.dsb-card[data-priority] {
+  border-left-color: var(--dsb-priority-color, color-mix(in srgb, var(--dsw-alias-label-primary) 9%, transparent));
+}
+.dsb-card[data-priority="urgent"] { --dsb-priority-color: var(--dsw-alias-state-error-primary); }
+.dsb-card[data-priority="high"] { --dsb-priority-color: var(--dsw-alias-state-warn-primary); }
+.dsb-card[data-priority="medium"] { --dsb-priority-color: var(--dsw-alias-static-amber-400, var(--dsw-alias-state-warn-primary)); }
+.dsb-card[data-priority="low"] { --dsb-priority-color: var(--dsw-alias-static-blue-500, var(--dsw-alias-brand-primary)); }
 .dsb-card:hover {
   border-color: color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);
 }
@@ -189,6 +199,14 @@ window.__ModuleLoader__.load({
   border-color: color-mix(in srgb, var(--dsw-alias-label-primary) 6%, transparent);
   background: color-mix(in srgb, var(--dsw-alias-bg-layer-2) 60%, transparent);
   box-shadow: none;
+}
+/* Finished work keeps its accent but muted: the priority still belongs to the
+   card, it just no longer asks for anything. */
+.dsb-card[data-done="true"][data-priority] {
+  border-left-color: color-mix(in srgb, var(--dsb-priority-color) 45%, transparent);
+}
+.dsb-card[data-done="true"][data-priority] .dsb-card-priority {
+  color: var(--dsw-alias-label-tertiary);
 }
 
 .dsb-card-top {
@@ -206,11 +224,10 @@ window.__ModuleLoader__.load({
   font: 400 11px/14px ui-monospace, SFMono-Regular, Menlo, monospace;
   letter-spacing: 0.01em;
 }
-.dsb-card-dot {
+.dsb-card-priority {
   flex: 0 0 auto;
-  width: 6px;
-  height: 6px;
-  border-radius: 999px;
+  color: var(--dsb-priority-color, var(--dsw-alias-label-secondary));
+  font: 500 11px/14px system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 .dsb-card-title {
   display: -webkit-box;
@@ -505,12 +522,23 @@ window.__ModuleLoader__.load({
   padding: 0 8px;
   border-radius: 8px;
   border: 1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent);
+  border-left-width: 3px;
   background: var(--dsw-alias-bg-layer-2);
   color: var(--dsw-alias-label-primary);
   font: 400 13px/18px system-ui, -apple-system, "Segoe UI", sans-serif;
   outline: none;
 }
 .dsb-control:focus-visible { border-color: var(--dsw-alias-brand-primary); }
+/* The priority select wears the same edge as the card it edits, so the colour
+   you picked is visible while you are picking it. The width is reserved on
+   every control so the fields below it stay aligned. */
+.dsb-control[data-priority] {
+  border-left-color: var(--dsb-priority-color, color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent));
+}
+.dsb-control[data-priority="urgent"] { --dsb-priority-color: var(--dsw-alias-state-error-primary); }
+.dsb-control[data-priority="high"] { --dsb-priority-color: var(--dsw-alias-state-warn-primary); }
+.dsb-control[data-priority="medium"] { --dsb-priority-color: var(--dsw-alias-static-amber-400, var(--dsw-alias-state-warn-primary)); }
+.dsb-control[data-priority="low"] { --dsb-priority-color: var(--dsw-alias-static-blue-500, var(--dsw-alias-brand-primary)); }
 .dsb-date { cursor: pointer; }
 .dsb-date::-webkit-calendar-picker-indicator { cursor: pointer; }
 
@@ -1183,6 +1211,7 @@ window.__ModuleLoader__.load({
           'data-card-id': card.id,
           'data-dragging': dragging ? 'true' : 'false',
           'data-done': done ? 'true' : 'false',
+          'data-priority': card.priority ?? undefined,
           draggable: true,
           tabIndex: 0,
           role: 'button',
@@ -1200,12 +1229,14 @@ window.__ModuleLoader__.load({
           'div',
           { className: 'dsb-card-top' },
           h('span', { className: 'dsb-card-id' }, `#${card.number}`),
+          // The word, not a dot: colour alone is not a label, and the edge
+          // already carries the colour. Text also survives greyscale.
           card.priority
-            ? h('span', {
-                className: 'dsb-card-dot',
-                style: { background: PRIORITY_COLOR[card.priority] ?? 'var(--dsw-alias-label-tertiary)' },
-                title: PRIORITIES.find((item) => item.id === card.priority)?.label,
-              })
+            ? h(
+                'span',
+                { className: 'dsb-card-priority' },
+                PRIORITIES.find((item) => item.id === card.priority)?.label ?? card.priority,
+              )
             : null,
         ),
         h('div', { className: 'dsb-card-title' }, card.title || '未命名'),
@@ -1620,6 +1651,7 @@ window.__ModuleLoader__.load({
                 id: 'dsb-pri',
                 className: 'dsb-control',
                 value: card.priority ?? '',
+                'data-priority': card.priority ?? undefined,
                 onChange: (event) => void onChange({ priority: event.target.value || null }),
               },
               h('option', { value: '' }, '无'),
