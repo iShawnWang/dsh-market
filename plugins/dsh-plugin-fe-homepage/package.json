@@ -1,6 +1,6 @@
 {
   "name": "dsh-plugin-fe-homepage",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "前端主页：一个标签页里看全所有前端项目的开发/测试/预生产/生产地址、常用入口和小程序发版步骤。",
   "license": "MIT",
   "type": "module",

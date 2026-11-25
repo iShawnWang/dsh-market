@@ -16,7 +16,6 @@ window.__ModuleLoader__.load({
   factory(require) {
     const React = require('react');
     const h = React.createElement;
-    const { useMemo, useState } = React;
 
     /** Must match the `main` slot key and the sidebar row id. */
     const PANEL_ID = 'dsh-plugin-fe-homepage';
@@ -274,12 +273,7 @@ window.__ModuleLoader__.load({
 .feh-inner { max-width: 1180px; margin: 0 auto; }
 
 /* ---- head ---- */
-.feh-head {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 20px;
-}
+.feh-head { margin-bottom: 20px; }
 .feh-title {
   margin: 0;
   font-size: 19px;
@@ -287,56 +281,6 @@ window.__ModuleLoader__.load({
   font-weight: 600;
   letter-spacing: -0.01em;
 }
-.feh-count {
-  color: var(--dsw-alias-label-tertiary);
-  font-variant-numeric: tabular-nums;
-  font-size: 12px;
-}
-.feh-search {
-  margin-left: auto;
-  position: relative;
-  width: 220px;
-  flex: 0 0 auto;
-}
-.feh-search input {
-  box-sizing: border-box;
-  width: 100%;
-  height: 30px;
-  padding: 0 26px 0 9px;
-  border-radius: 7px;
-  border: 1px solid var(--dsw-alias-border-l2);
-  background: var(--dsw-alias-bg-layer-1);
-  color: var(--dsw-alias-label-primary);
-  font: inherit;
-  outline: none;
-}
-.feh-search input::placeholder { color: var(--dsw-alias-label-tertiary); }
-.feh-search input:focus {
-  border-color: var(--dsw-alias-brand-primary);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 22%, transparent);
-}
-.feh-search-clear {
-  position: absolute;
-  top: 50%;
-  right: 4px;
-  transform: translateY(-50%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  padding: 0;
-  border: 0;
-  border-radius: 5px;
-  background: transparent;
-  color: var(--dsw-alias-label-tertiary);
-  cursor: pointer;
-}
-.feh-search-clear:hover {
-  background: var(--dsw-alias-interactive-bg-hover);
-  color: var(--dsw-alias-label-primary);
-}
-
 /* ---- sections ---- */
 .feh-section { margin-top: 26px; }
 .feh-section:first-of-type { margin-top: 0; }
@@ -468,7 +412,7 @@ a.feh-name:hover { color: var(--dsw-alias-link); text-decoration: underline; }
 /* ---- entry cards ---- */
 .feh-entries {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(212px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(228px, 1fr));
   gap: 10px;
 }
 .feh-entry {
@@ -640,23 +584,9 @@ a.feh-api:hover .feh-api-url { color: var(--dsw-alias-link); text-decoration: un
   white-space: pre;
   overflow-x: auto;
 }
-.feh-empty {
-  padding: 40px 0;
-  text-align: center;
-  color: var(--dsw-alias-label-tertiary);
-  font-size: 12.5px;
-}
-.feh-empty kbd {
-  font-family: inherit;
-  padding: 1px 5px;
-  border-radius: 4px;
-  background: var(--dsw-alias-bg-layer-2);
-  border: 1px solid var(--dsw-alias-border-l2);
-}
 @media (max-width: 720px) {
   .feh-scroll { padding: 16px 14px 40px; }
   .feh-mp { grid-template-columns: 1fr; }
-  .feh-search { width: 150px; }
 }
 `;
 
@@ -684,17 +614,6 @@ a.feh-api:hover .feh-api-url { color: var(--dsw-alias-link); text-decoration: un
         strokeLinecap: 'round',
       }),
       h('circle', { cx: 12, cy: 7.9, r: 0.95, fill: 'currentColor' }),
-    );
-
-    const CLEAR_GLYPH = h(
-      'svg',
-      { width: 12, height: 12, viewBox: '0 0 24 24', fill: 'none', 'aria-hidden': true },
-      h('path', {
-        d: 'M7 7l10 10M17 7L7 17',
-        stroke: 'currentColor',
-        strokeWidth: 1.8,
-        strokeLinecap: 'round',
-      }),
     );
 
     function ProjectCard({ project }) {
@@ -803,30 +722,6 @@ a.feh-api:hover .feh-api-url { color: var(--dsw-alias-link); text-decoration: un
     }
 
     function Page() {
-      const [query, setQuery] = useState('');
-
-      const visible = useMemo(() => {
-        const needle = query.trim().toLowerCase();
-        if (!needle) return PROJECTS;
-        return PROJECTS.filter((project) => {
-          const haystack = [
-            project.name,
-            project.subtitle,
-            project.platform,
-            project.repo,
-            project.repoNote,
-            ...(project.repos ?? []),
-            ...(project.envs ? Object.values(project.envs) : []),
-          ]
-            .filter(Boolean)
-            .join(' ')
-            .toLowerCase();
-          return haystack.includes(needle);
-        });
-      }, [query]);
-
-      const searching = query.trim() !== '';
-
       return h(
         'div',
         { className: 'feh-root' },
@@ -841,182 +736,146 @@ a.feh-api:hover .feh-api-url { color: var(--dsw-alias-link); text-decoration: un
               'div',
               { className: 'feh-head' },
               h('h1', { className: 'feh-title' }, '前端主页'),
-              h('span', { className: 'feh-count' }, `${visible.length} 个项目`),
+            ),
+
+            h(
+              'section',
+              { className: 'feh-section' },
+              h('div', { className: 'feh-sec-head' }, h('h2', { className: 'feh-sec-title' }, '常用入口')),
               h(
                 'div',
-                { className: 'feh-search' },
-                h('input', {
-                  type: 'search',
-                  value: query,
-                  placeholder: '搜索项目或域名',
-                  'aria-label': '搜索项目或域名',
-                  onChange: (event) => setQuery(event.target.value),
-                }),
-                searching
-                  ? h(
-                      'button',
-                      {
-                        className: 'feh-search-clear',
-                        type: 'button',
-                        'aria-label': '清空搜索',
-                        onClick: () => setQuery(''),
-                      },
-                      CLEAR_GLYPH,
-                    )
-                  : null,
+                { className: 'feh-entries' },
+                ENTRIES.map((entry) => h(EntryCard, { key: entry.id, entry })),
               ),
             ),
 
             h(
               'section',
               { className: 'feh-section' },
-              visible.length
-                ? h(
-                    'div',
-                    { className: 'feh-grid' },
-                    visible.map((project) => h(ProjectCard, { key: project.id, project })),
-                  )
-                : h(
-                    'div',
-                    { className: 'feh-empty' },
-                    '没有匹配的项目，换个关键词或清空搜索',
-                  ),
+              h('div', { className: 'feh-sec-head' }, h('h2', { className: 'feh-sec-title' }, '项目地址')),
+              h(
+                'div',
+                { className: 'feh-grid' },
+                PROJECTS.map((project) => h(ProjectCard, { key: project.id, project })),
+              ),
             ),
 
-            searching
-              ? null
-              : h(
-                  React.Fragment,
-                  null,
-
-                  h(
-                    'section',
-                    { className: 'feh-section' },
-                    h('div', { className: 'feh-sec-head' }, h('h2', { className: 'feh-sec-title' }, '常用入口')),
-                    h(
-                      'div',
-                      { className: 'feh-entries' },
-                      ENTRIES.map((entry) => h(EntryCard, { key: entry.id, entry })),
-                    ),
-                  ),
-
-                  h(
-                    'section',
-                    { className: 'feh-section' },
-                    h('div', { className: 'feh-sec-head' }, h('h2', { className: 'feh-sec-title' }, '接口环境')),
-                    h(
-                      'div',
-                      { className: 'feh-apis' },
-                      APIS.map((api) =>
-                        api.url
-                          ? h(
-                              'a',
-                              {
-                                key: api.id,
-                                className: 'feh-api',
-                                href: href(api.url),
-                                target: '_blank',
-                                rel: 'noreferrer noopener',
-                              },
-                              h('span', { className: 'feh-api-label' }, api.label),
-                              h('span', { className: 'feh-api-url' }, api.url),
-                            )
-                          : h(
-                              'div',
-                              { key: api.id, className: 'feh-api' },
-                              h('span', { className: 'feh-api-label' }, api.label),
-                              h('span', { className: 'feh-api-url feh-api-off' }, api.note),
-                            ),
-                      ),
-                    ),
-                  ),
-
-                  h(
-                    'section',
-                    { className: 'feh-section' },
-                    h('div', { className: 'feh-sec-head' }, h('h2', { className: 'feh-sec-title' }, '小程序')),
-                    h(
-                      'div',
-                      { className: 'feh-mp' },
-
-                      h(
+            h(
+              'section',
+              { className: 'feh-section' },
+              h('div', { className: 'feh-sec-head' }, h('h2', { className: 'feh-sec-title' }, '接口环境')),
+              h(
+                'div',
+                { className: 'feh-apis' },
+                APIS.map((api) =>
+                  api.url
+                    ? h(
                         'a',
                         {
-                          className: 'feh-mp-qr',
-                          href: asset('miniapp-qr.webp'),
+                          key: api.id,
+                          className: 'feh-api',
+                          href: href(api.url),
                           target: '_blank',
                           rel: 'noreferrer noopener',
                         },
-                        h('img', { src: asset('miniapp-qr.webp'), alt: '小程序体验版二维码' }),
-                        h('span', { className: 'feh-cap' }, '体验版二维码 · pages/index/index'),
-                        h('img', {
-                          className: 'feh-mp-shot',
-                          src: asset('miniapp-mp.webp'),
-                          alt: '微信公众平台版本管理',
-                          loading: 'lazy',
-                        }),
-                      ),
-
-                      h(
+                        h('span', { className: 'feh-api-label' }, api.label),
+                        h('span', { className: 'feh-api-url' }, api.url),
+                      )
+                    : h(
                         'div',
-                        { className: 'feh-mp-steps' },
-                        h(Steps, { items: MP_STEPS }),
-                        h('a', {
-                          className: 'feh-link',
-                          href: 'http://192.168.91.130:3000/help',
-                          target: '_blank',
-                          rel: 'noreferrer noopener',
-                        }, '测试环境 CI'),
-                        h('img', {
-                          className: 'feh-mp-shot',
-                          src: asset('miniapp-build.webp'),
-                          alt: '构建输出',
-                          loading: 'lazy',
-                        }),
+                        { key: api.id, className: 'feh-api' },
+                        h('span', { className: 'feh-api-label' }, api.label),
+                        h('span', { className: 'feh-api-url feh-api-off' }, api.note),
                       ),
-                    ),
-                  ),
+                ),
+              ),
+            ),
 
+            h(
+              'section',
+              { className: 'feh-section' },
+              h('div', { className: 'feh-sec-head' }, h('h2', { className: 'feh-sec-title' }, '小程序')),
+              h(
+                'div',
+                { className: 'feh-mp' },
+
+                h(
+                  'a',
+                  {
+                    className: 'feh-mp-qr',
+                    href: asset('miniapp-qr.webp'),
+                    target: '_blank',
+                    rel: 'noreferrer noopener',
+                  },
+                  h('img', { src: asset('miniapp-qr.webp'), alt: '小程序体验版二维码' }),
+                  h('span', { className: 'feh-cap' }, '体验版二维码 · pages/index/index'),
+                  h('img', {
+                    className: 'feh-mp-shot',
+                    src: asset('miniapp-mp.webp'),
+                    alt: '微信公众平台版本管理',
+                    loading: 'lazy',
+                  }),
+                ),
+
+                h(
+                  'div',
+                  { className: 'feh-mp-steps' },
+                  h(Steps, { items: MP_STEPS }),
+                  h('a', {
+                    className: 'feh-link',
+                    href: 'http://192.168.91.130:3000/help',
+                    target: '_blank',
+                    rel: 'noreferrer noopener',
+                  }, '测试环境 CI'),
+                  h('img', {
+                    className: 'feh-mp-shot',
+                    src: asset('miniapp-build.webp'),
+                    alt: '构建输出',
+                    loading: 'lazy',
+                  }),
+                ),
+              ),
+            ),
+
+            h(
+              'section',
+              { className: 'feh-section' },
+              h(
+                'div',
+                { className: 'feh-cols' },
+                h(
+                  'div',
+                  { className: 'feh-box' },
+                  h('h3', { className: 'feh-box-title' }, '测试账号'),
                   h(
-                    'section',
-                    { className: 'feh-section' },
-                    h(
-                      'div',
-                      { className: 'feh-cols' },
+                    'div',
+                    { className: 'feh-chips' },
+                    TEST_ACCOUNTS.map((account) =>
                       h(
-                        'div',
-                        { className: 'feh-box' },
-                        h('h3', { className: 'feh-box-title' }, '测试账号'),
-                        h(
-                          'div',
-                          { className: 'feh-chips' },
-                          TEST_ACCOUNTS.map((account) =>
-                            h(
-                              'span',
-                              { key: account.phone, className: 'feh-chip' },
-                              account.phone,
-                              h('span', { className: 'feh-chip-who' }, account.who),
-                            ),
-                          ),
-                        ),
-                      ),
-                      h(
-                        'div',
-                        { className: 'feh-box' },
-                        h('h3', { className: 'feh-box-title' }, 'Mac 跑 Node 14 老项目'),
-                        h(
-                          'div',
-                          { className: 'feh-lines' },
-                          NODE14_STEPS.map((line) =>
-                            h('span', { key: line, className: 'feh-line' }, line),
-                          ),
-                        ),
+                        'span',
+                        { key: account.phone, className: 'feh-chip' },
+                        account.phone,
+                        h('span', { className: 'feh-chip-who' }, account.who),
                       ),
                     ),
                   ),
                 ),
+                h(
+                  'div',
+                  { className: 'feh-box' },
+                  h('h3', { className: 'feh-box-title' }, 'Mac 跑 Node 14 老项目'),
+                  h(
+                    'div',
+                    { className: 'feh-lines' },
+                    NODE14_STEPS.map((line) =>
+                      h('span', { key: line, className: 'feh-line' }, line),
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
+        ),
       );
     }
 
