@@ -586,10 +586,10 @@ a.feh-api:hover .feh-api-url { color: var(--dsw-alias-link); text-decoration: un
   background: var(--dsw-alias-bg-layer-2);
   color: var(--dsw-alias-label-primary);
 }
-.feh-shots { display: flex; flex-direction: column; gap: 8px; }
-.feh-shots img {
-  width: 100%;
+.feh-mp-shot {
   display: block;
+  width: 100%;
+  margin-top: 2px;
   border-radius: 8px;
   border: 1px solid var(--dsw-alias-border-l2);
 }
@@ -949,6 +949,12 @@ a.feh-api:hover .feh-api-url { color: var(--dsw-alias-link); text-decoration: un
                         },
                         h('img', { src: asset('miniapp-qr.webp'), alt: '小程序体验版二维码' }),
                         h('span', { className: 'feh-cap' }, '体验版二维码 · pages/index/index'),
+                        h('img', {
+                          className: 'feh-mp-shot',
+                          src: asset('miniapp-mp.webp'),
+                          alt: '微信公众平台版本管理',
+                          loading: 'lazy',
+                        }),
                       ),
 
                       h(
@@ -961,20 +967,12 @@ a.feh-api:hover .feh-api-url { color: var(--dsw-alias-link); text-decoration: un
                           target: '_blank',
                           rel: 'noreferrer noopener',
                         }, '测试环境 CI'),
-                        h(
-                          'div',
-                          { className: 'feh-shots' },
-                          h('img', {
-                            src: asset('miniapp-build.webp'),
-                            alt: '构建输出',
-                            loading: 'lazy',
-                          }),
-                          h('img', {
-                            src: asset('miniapp-mp.webp'),
-                            alt: '微信公众平台版本管理',
-                            loading: 'lazy',
-                          }),
-                        ),
+                        h('img', {
+                          className: 'feh-mp-shot',
+                          src: asset('miniapp-build.webp'),
+                          alt: '构建输出',
+                          loading: 'lazy',
+                        }),
                       ),
                     ),
                   ),
