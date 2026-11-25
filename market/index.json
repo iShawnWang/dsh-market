@@ -298,6 +298,19 @@
       },
       "versions": [
         {
+          "version": "0.1.1",
+          "publishTimestamp": 1795590538,
+          "source": {
+            "type": "git",
+            "url": "https://ghfast.top/github.com/iShawnWang/dsh-market",
+            "commit": "03266cfc27188820ed3803c33ac9688c5e7b4bd7",
+            "path": "plugins/dsh-plugin-zentao"
+          },
+          "engines": {
+            "dsh": ">=0.2.2-rc.1 <0.3.0-0"
+          }
+        },
+        {
           "version": "0.1.0",
           "publishTimestamp": 1795514382,
           "source": {
