@@ -167,6 +167,7 @@ window.__ModuleLoader__.load({
           test: 'https://easdeve.yeqiao.cn',
           prod: 'https://store.yeqiao.cn/',
         },
+        envAccounts: { test: 'lindakai' },
       },
       {
         id: 'insurance',
@@ -180,6 +181,7 @@ window.__ModuleLoader__.load({
           test: 'https://deve.xiaojuledao.com/#/',
           prod: 'https://insure.ruianbaoxian.com/#/',
         },
+        envAccounts: { test: '15140112311', prod: '15140112313' },
       },
       {
         id: 'lease',
@@ -188,6 +190,7 @@ window.__ModuleLoader__.load({
         envs: {
           test: 'https://qymapdev.yeqiao.cn/',
         },
+        envAccounts: { test: 'tongdong' },
       },
     ];
 
@@ -232,12 +235,6 @@ window.__ModuleLoader__.load({
       },
     ];
 
-    const NODE14_STEPS = [
-      'arch -x86_64 /bin/zsh',
-      'export NVM_DIR="$HOME/.nvm"',
-      'source "$NVM_DIR/nvm.sh"',
-    ];
-
     // -------------------------------------------------------------- helpers
 
     /** Document shorthand omits the scheme on a few hosts; links need one. */
@@ -250,9 +247,6 @@ window.__ModuleLoader__.load({
     function bare(url) {
       return href(url).replace(/^https?:\/\//i, '').replace(/\/$/, '');
     }
-
-    const envCount = (project) =>
-      project.envs ? ENVS.filter((env) => Boolean(project.envs[env.id])).length : 0;
 
     // ---------------------------------------------------------------- styles
     //
@@ -307,19 +301,22 @@ window.__ModuleLoader__.load({
   text-transform: uppercase;
   color: var(--dsw-alias-label-secondary);
 }
-.feh-sec-hint { color: var(--dsw-alias-label-tertiary); font-size: 12px; }
 
-/* ---- project grid ---- */
+/* ---- project grid ----
+   Columns, not rows: cards differ in height (a project with four environments
+   is twice a mini-program card), and a row grid leaves a hole under every short
+   card. Columns pack them tight, so the block has no gaps. */
 .feh-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(318px, 1fr));
-  align-items: start;
-  gap: 10px;
+  column-width: 300px;
+  column-gap: 10px;
 }
 .feh-card {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  margin: 0 0 10px;
+  break-inside: avoid;
+  page-break-inside: avoid;
   padding: 12px 13px 11px;
   border-radius: 10px;
   border: 1px solid var(--dsw-alias-border-l2);
@@ -373,31 +370,44 @@ a.feh-name:hover { color: var(--dsw-alias-link); text-decoration: underline; }
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.feh-envs { display: flex; flex-wrap: wrap; gap: 5px; }
+/* 环境: one row per environment, 环境名：地址（账号）. The whole row is the link. */
+.feh-envs { display: flex; flex-direction: column; gap: 1px; }
 .feh-env {
-  display: inline-flex;
-  align-items: center;
-  height: 22px;
-  padding: 0 8px;
-  border-radius: 6px;
-  border: 1px solid var(--dsw-alias-border-l2);
-  background: var(--dsw-alias-bg-layer-2);
-  color: var(--dsw-alias-label-secondary);
-  font-size: 11.5px;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  margin: 0 -5px;
+  padding: 2px 5px;
+  border-radius: 5px;
   text-decoration: none;
-  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+  transition: background 120ms ease;
 }
-.feh-env:hover {
-  background: color-mix(in srgb, var(--dsw-alias-brand-primary) 14%, transparent);
-  border-color: color-mix(in srgb, var(--dsw-alias-brand-primary) 40%, transparent);
-  color: var(--dsw-alias-label-primary);
+.feh-env:hover { background: var(--dsw-alias-interactive-bg-hover); }
+.feh-env-label {
+  flex: 0 0 50px;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 11.5px;
 }
-.feh-env.feh-env-prod {
-  border-color: color-mix(in srgb, var(--dsw-alias-state-success-primary) 34%, transparent);
+.feh-env-url {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  color: var(--dsw-alias-label-secondary);
 }
-.feh-env.feh-env-prod:hover {
-  background: color-mix(in srgb, var(--dsw-alias-state-success-primary) 16%, transparent);
-  border-color: color-mix(in srgb, var(--dsw-alias-state-success-primary) 55%, transparent);
+.feh-env:hover .feh-env-url {
+  color: var(--dsw-alias-link);
+  text-decoration: underline;
+}
+.feh-env-account {
+  flex: 0 0 auto;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
 }
 /* 仓库/分支: its own row, one per repository, clipped with an ellipsis. */
 .feh-repos { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
@@ -553,7 +563,7 @@ a.feh-api:hover .feh-api-url { color: var(--dsw-alias-link); text-decoration: un
   font-variant-numeric: tabular-nums;
   font-size: 11px;
 }
-.feh-step code, .feh-code {
+.feh-step code {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 11.5px;
   padding: 1px 5px;
@@ -605,11 +615,6 @@ a.feh-api:hover .feh-api-url { color: var(--dsw-alias-link); text-decoration: un
 @keyframes feh-fade { from { opacity: 0 } to { opacity: 1 } }
 
 /* ---- misc ---- */
-.feh-cols {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 10px;
-}
 .feh-box {
   padding: 12px;
   border-radius: 10px;
@@ -635,14 +640,6 @@ a.feh-api:hover .feh-api-url { color: var(--dsw-alias-link); text-decoration: un
   font-variant-numeric: tabular-nums;
 }
 .feh-chip-who { color: var(--dsw-alias-label-tertiary); font-size: 11px; }
-.feh-lines { display: flex; flex-direction: column; gap: 4px; }
-.feh-line {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 11.5px;
-  color: var(--dsw-alias-label-primary);
-  white-space: pre;
-  overflow-x: auto;
-}
 @media (max-width: 900px) {
   .feh-entries { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
@@ -728,20 +725,24 @@ a.feh-api:hover .feh-api-url { color: var(--dsw-alias-link); text-decoration: un
           ? h(
               'div',
               { className: 'feh-envs' },
-              envs.map((env) =>
-                h(
+              envs.map((env) => {
+                const url = project.envs[env.id];
+                const account = project.envAccounts?.[env.id];
+                return h(
                   'a',
                   {
                     key: env.id,
-                    className: 'feh-env' + (env.id === 'prod' ? ' feh-env-prod' : ''),
-                    href: href(project.envs[env.id]),
+                    className: 'feh-env',
+                    href: href(url),
                     target: '_blank',
                     rel: 'noreferrer noopener',
-                    title: bare(project.envs[env.id]),
+                    title: href(url),
                   },
-                  env.label,
-                ),
-              ),
+                  h('span', { className: 'feh-env-label' }, `${env.label}：`),
+                  h('span', { className: 'feh-env-url' }, bare(url)),
+                  account ? h('span', { className: 'feh-env-account' }, `（${account}）`) : null,
+                );
+              }),
             )
           : null,
       );
@@ -970,33 +971,17 @@ a.feh-api:hover .feh-api-url { color: var(--dsw-alias-link); text-decoration: un
               { className: 'feh-section' },
               h(
                 'div',
-                { className: 'feh-cols' },
+                { className: 'feh-box' },
+                h('h3', { className: 'feh-box-title' }, '测试账号'),
                 h(
                   'div',
-                  { className: 'feh-box' },
-                  h('h3', { className: 'feh-box-title' }, '测试账号'),
-                  h(
-                    'div',
-                    { className: 'feh-chips' },
-                    TEST_ACCOUNTS.map((account) =>
-                      h(
-                        'span',
-                        { key: account.phone, className: 'feh-chip' },
-                        account.phone,
-                        h('span', { className: 'feh-chip-who' }, account.who),
-                      ),
-                    ),
-                  ),
-                ),
-                h(
-                  'div',
-                  { className: 'feh-box' },
-                  h('h3', { className: 'feh-box-title' }, 'Mac 跑 Node 14 老项目'),
-                  h(
-                    'div',
-                    { className: 'feh-lines' },
-                    NODE14_STEPS.map((line) =>
-                      h('span', { key: line, className: 'feh-line' }, line),
+                  { className: 'feh-chips' },
+                  TEST_ACCOUNTS.map((account) =>
+                    h(
+                      'span',
+                      { key: account.phone, className: 'feh-chip' },
+                      account.phone,
+                      h('span', { className: 'feh-chip-who' }, account.who),
                     ),
                   ),
                 ),
