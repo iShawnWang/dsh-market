@@ -32,6 +32,57 @@ const DEFAULT_COLUMNS = [
 export const PRIORITIES = ['urgent', 'high', 'medium', 'low'];
 
 /**
+ * How many change-log entries one card keeps. A card edited a hundred times is
+ * still one card; the log is there to answer "what happened", not to be an
+ * audit trail, and an unbounded list would grow the whole board file with it.
+ */
+export const MAX_HISTORY = 200;
+
+/**
+ * Append one entry to a card's change log, capped at MAX_HISTORY.
+ *
+ * The log starts at creation: a card with no entries is a card from before this
+ * existed, and `normalize` backfills a "created" entry for it so the drawer
+ * never shows an empty history.
+ *
+ * @param {object} card - card to log against.
+ * @param {number} at - epoch milliseconds.
+ * @param {string} field - field name, or 'created'.
+ * @param {unknown} [from] - previous value.
+ * @param {unknown} [to] - next value.
+ */
+export function logChange(card, at, field, from, to) {
+  if (!Array.isArray(card.history)) card.history = [];
+  card.history.push({
+    at,
+    field,
+    ...(field === 'created' ? {} : { from: from ?? null, to: to ?? null }),
+  });
+  if (card.history.length > MAX_HISTORY) {
+    card.history = card.history.slice(card.history.length - MAX_HISTORY);
+  }
+}
+
+/**
+ * Log a field change only when the value actually changed. Saving a form that
+ * was not edited is not an event, and a log full of no-ops is a log nobody
+ * reads.
+ *
+ * @param {object} card - card to log against.
+ * @param {number} at - epoch milliseconds.
+ * @param {string} field - field name.
+ * @param {unknown} next - value about to be stored.
+ * @returns {boolean} whether it differed.
+ */
+export function logIfChanged(card, at, field, next) {
+  const previous = card[field] ?? null;
+  const value = next ?? null;
+  if (previous === value) return false;
+  logChange(card, at, field, previous, value);
+  return true;
+}
+
+/**
  * Expand a leading `~` and resolve the board path.
  * @param {string} [configured] - configured path, possibly empty.
  * @returns {string} absolute path.
@@ -100,19 +151,42 @@ export function normalize(value) {
       const cards = Array.isArray(project.cards)
         ? project.cards
             .filter((card) => card && typeof card === 'object')
-            .map((card) => ({
-              id: String(card.id ?? randomUUID()),
-              number: Number.isFinite(card.number) ? card.number : 1,
-              title: String(card.title ?? ''),
-              description: String(card.description ?? ''),
-              // A card pointing at a deleted column lands in the first one
-              // rather than vanishing from the board.
-              columnId: columnIds.has(card.columnId) ? card.columnId : fallbackColumn,
-              priority: PRIORITIES.includes(card.priority) ? card.priority : null,
-              dueDate: typeof card.dueDate === 'string' ? card.dueDate : null,
-              createdAt: Number(card.createdAt ?? Date.now()),
-              updatedAt: Number(card.updatedAt ?? Date.now()),
-            }))
+            .map((card) => {
+              const createdAt = Number(card.createdAt ?? Date.now());
+              const startDate = typeof card.startDate === 'string' ? card.startDate : null;
+              const dueDate = typeof card.dueDate === 'string' ? card.dueDate : null;
+              // Cards written before the change log existed get one entry
+              // saying when they were made, so every drawer shows a history
+              // that starts at creation instead of an empty box.
+              const history = Array.isArray(card.history)
+                ? card.history
+                    .filter((entry) => entry && typeof entry === 'object')
+                    .map((entry) => ({
+                      at: Number(entry.at ?? createdAt),
+                      field: String(entry.field ?? 'created'),
+                      ...(entry.field === 'created'
+                        ? {}
+                        : { from: entry.from ?? null, to: entry.to ?? null }),
+                    }))
+                    .slice(-MAX_HISTORY)
+                : [];
+              if (history.length === 0) history.push({ at: createdAt, field: 'created' });
+              return {
+                id: String(card.id ?? randomUUID()),
+                number: Number.isFinite(card.number) ? card.number : 1,
+                title: String(card.title ?? ''),
+                description: String(card.description ?? ''),
+                // A card pointing at a deleted column lands in the first one
+                // rather than vanishing from the board.
+                columnId: columnIds.has(card.columnId) ? card.columnId : fallbackColumn,
+                priority: PRIORITIES.includes(card.priority) ? card.priority : null,
+                startDate,
+                dueDate,
+                createdAt,
+                updatedAt: Number(card.updatedAt ?? Date.now()),
+                history,
+              };
+            })
         : [];
       return {
         id: String(project.id ?? randomUUID()),

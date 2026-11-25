@@ -15,7 +15,7 @@
 import { randomUUID } from 'node:crypto';
 import { defineTool } from '@deepseek-ai/dsh-tools';
 import { normalize } from './store.js';
-import { BoardStore, PRIORITIES, nextCardNumber, requireCard, requireProject, resolveDataFile } from './store.js';
+import { BoardStore, PRIORITIES, logChange, logIfChanged, nextCardNumber, requireCard, requireProject, resolveDataFile } from './store.js';
 
 export { Config } from './config.js';
 
@@ -59,17 +59,23 @@ function registerBridge(ctx, store) {
             const column = project.columns.find((item) => item.id === body.columnId);
             if (!column) throw new Error('column not found');
             const now = Date.now();
-            project.cards.push({
+            const card = {
               id: randomUUID(),
               number: nextCardNumber(project),
               title: String(body.title ?? '').slice(0, 500),
               description: String(body.description ?? ''),
               columnId: column.id,
               priority: PRIORITIES.includes(body.priority) ? body.priority : null,
+              startDate: typeof body.startDate === 'string' ? body.startDate : null,
               dueDate: typeof body.dueDate === 'string' ? body.dueDate : null,
               createdAt: now,
               updatedAt: now,
-            });
+              // The log starts here, not at the first edit: "when was this
+              // made" is the first question anyone asks of a history.
+              history: [],
+            };
+            logChange(card, now, 'created');
+            project.cards.push(card);
           }).then((document) => ({ ok: true, board: document })),
         ),
 
@@ -77,15 +83,33 @@ function registerBridge(ctx, store) {
           store.update((document) => {
             const project = requireProject(document, body.projectId);
             const card = requireCard(project, body.cardId);
-            if (typeof body.title === 'string') card.title = body.title.slice(0, 500);
-            if (typeof body.description === 'string') card.description = body.description;
+            const now = Date.now();
+            // Log before assigning: the comparison needs the old value, and
+            // only real differences belong in the log.
+            if (typeof body.title === 'string') {
+              logIfChanged(card, now, 'title', body.title.slice(0, 500));
+              card.title = body.title.slice(0, 500);
+            }
+            if (typeof body.description === 'string') {
+              logIfChanged(card, now, 'description', body.description);
+              card.description = body.description;
+            }
             if ('priority' in body) {
-              card.priority = PRIORITIES.includes(body.priority) ? body.priority : null;
+              const priority = PRIORITIES.includes(body.priority) ? body.priority : null;
+              logIfChanged(card, now, 'priority', priority);
+              card.priority = priority;
+            }
+            if ('startDate' in body) {
+              const startDate = typeof body.startDate === 'string' ? body.startDate : null;
+              logIfChanged(card, now, 'startDate', startDate);
+              card.startDate = startDate;
             }
             if ('dueDate' in body) {
-              card.dueDate = typeof body.dueDate === 'string' ? body.dueDate : null;
+              const dueDate = typeof body.dueDate === 'string' ? body.dueDate : null;
+              logIfChanged(card, now, 'dueDate', dueDate);
+              card.dueDate = dueDate;
             }
-            card.updatedAt = Date.now();
+            card.updatedAt = now;
           }).then((document) => ({ ok: true, board: document })),
         ),
 
@@ -98,8 +122,10 @@ function registerBridge(ctx, store) {
             const card = requireCard(project, body.cardId);
             const column = project.columns.find((item) => item.id === body.columnId);
             if (!column) throw new Error('column not found');
+            const now = Date.now();
+            logIfChanged(card, now, 'columnId', column.id);
             card.columnId = column.id;
-            card.updatedAt = Date.now();
+            card.updatedAt = now;
             const order = siblingOrder(project, column.id, card.id);
             const index = clampIndex(body.index, order.length);
             order.splice(index, 0, card.id);
@@ -321,6 +347,7 @@ function registerTools(ctx, store) {
                         number: card.number,
                         title: card.title,
                         priority: card.priority,
+                        startDate: card.startDate,
                         dueDate: card.dueDate,
                       })),
                   })),
@@ -348,6 +375,14 @@ function registerTools(ctx, store) {
                 type: 'string',
                 description: '优先级：urgent / high / medium / low，省略表示不设。',
               },
+              startDate: {
+                type: 'string',
+                description: '开始日期，YYYY-MM-DD。',
+              },
+              dueDate: {
+                type: 'string',
+                description: '截止日期，YYYY-MM-DD。',
+              },
             },
             output: {
               schema: {
@@ -369,17 +404,21 @@ function registerTools(ctx, store) {
                 const column = project.columns.find((item) => item.id === args.columnId);
                 if (!column) throw new Error('column not found');
                 const now = Date.now();
-                project.cards.push({
+                const card = {
                   id: randomUUID(),
                   number: nextCardNumber(project),
                   title: String(args.title ?? '').slice(0, 500),
                   description: String(args.description ?? ''),
                   columnId: column.id,
                   priority: PRIORITIES.includes(args.priority) ? args.priority : null,
-                  dueDate: null,
+                  startDate: typeof args.startDate === 'string' ? args.startDate : null,
+                  dueDate: typeof args.dueDate === 'string' ? args.dueDate : null,
                   createdAt: now,
                   updatedAt: now,
-                });
+                  history: [],
+                };
+                logChange(card, now, 'created');
+                project.cards.push(card);
               });
               const project = document.projects.find((item) => item.id === args.projectId);
               const card = project.cards[project.cards.length - 1];
@@ -416,8 +455,10 @@ function registerTools(ctx, store) {
                 const columnId = args.columnId ?? card.columnId;
                 const column = project.columns.find((item) => item.id === columnId);
                 if (!column) throw new Error('column not found');
+                const now = Date.now();
+                logIfChanged(card, now, 'columnId', column.id);
                 card.columnId = column.id;
-                card.updatedAt = Date.now();
+                card.updatedAt = now;
                 const order = siblingOrder(project, column.id, card.id);
                 order.splice(clampIndex(args.index, order.length), 0, card.id);
                 applyOrder(project, order);
@@ -451,7 +492,8 @@ function renderBoard(value) {
       for (const card of column.cards) {
         const bits = [`#${card.number} ${card.title} [${card.id}]`];
         if (card.priority) bits.push(card.priority);
-        if (card.dueDate) bits.push(card.dueDate);
+        if (card.startDate) bits.push(`${card.startDate} →${card.dueDate ? ` ${card.dueDate}` : ''}`);
+        else if (card.dueDate) bits.push(card.dueDate);
         lines.push(`    ${bits.join(' · ')}`);
       }
     }

@@ -535,6 +535,48 @@ window.__ModuleLoader__.load({
   font: 400 12px/18px system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
+.dsb-history {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.dsb-history-title {
+  color: var(--dsw-alias-label-tertiary);
+  font: 500 11px/16px system-ui, -apple-system, "Segoe UI", sans-serif;
+  letter-spacing: 0.02em;
+}
+.dsb-history-list {
+  margin: 0;
+  padding: 0 0 0 11px;
+  list-style: none;
+  border-left: 1px solid var(--dsw-alias-border-l2);
+}
+.dsb-history-item {
+  position: relative;
+  padding: 0 0 8px;
+  color: var(--dsw-alias-label-secondary);
+  font: 400 12px/18px system-ui, -apple-system, "Segoe UI", sans-serif;
+  overflow-wrap: anywhere;
+}
+.dsb-history-item:last-child { padding-bottom: 0; }
+.dsb-history-item::before {
+  content: "";
+  position: absolute;
+  left: -14px;
+  top: 6px;
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--dsw-alias-border-l3, var(--dsw-alias-border-l2));
+}
+.dsb-history-when {
+  margin-right: 6px;
+  color: var(--dsw-alias-label-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+.dsb-history-field { color: var(--dsw-alias-label-tertiary); }
+.dsb-history-value { color: var(--dsw-alias-label-primary); }
+
 .dsb-empty {
   display: flex;
   align-items: center;
@@ -1129,6 +1171,10 @@ window.__ModuleLoader__.load({
      */
     function Card({ card, done, dragging, onOpen, onDragStart, onDragEnd }) {
       const due = formatDue(card.dueDate);
+      const start = formatDue(card.startDate);
+      // One chip for the whole window: two dates stacked read as two facts when
+      // they are one, and the arrow says which end is which.
+      const span = start && due ? `${start} → ${due}` : (due ?? start);
       const overdue = isOverdue(card.dueDate);
       return h(
         'div',
@@ -1163,11 +1209,11 @@ window.__ModuleLoader__.load({
             : null,
         ),
         h('div', { className: 'dsb-card-title' }, card.title || '未命名'),
-        due &&
+        span &&
           h(
             'div',
             { className: 'dsb-card-foot' },
-            h('span', { className: 'dsb-chip', 'data-overdue': overdue ? 'true' : 'false' }, due),
+            h('span', { className: 'dsb-chip', 'data-overdue': overdue ? 'true' : 'false' }, span),
           ),
       );
     }
@@ -1364,6 +1410,102 @@ window.__ModuleLoader__.load({
     }
 
     /**
+     * The change log: what happened to this card, newest last.
+     *
+     * A timeline rather than a table: the entries are few and the order is the
+     * point, and a table of one-line facts would be wider without being clearer.
+     */
+    function History({ history }) {
+      const entries = Array.isArray(history) ? history : [];
+      if (entries.length === 0) return null;
+      return h(
+        'div',
+        { className: 'dsb-history' },
+        h('div', { className: 'dsb-history-title' }, '变更记录'),
+        h(
+          'ul',
+          { className: 'dsb-history-list' },
+          entries.map((entry, index) =>
+            h(
+              'li',
+              { key: `${entry.at}-${index}`, className: 'dsb-history-item' },
+              h('span', { className: 'dsb-history-when' }, formatWhen(entry.at)),
+              describeChange(entry),
+            ),
+          ),
+        ),
+      );
+    }
+
+    /** Human label for a logged field. */
+    const FIELD_LABEL = {
+      title: '标题',
+      description: '描述',
+      priority: '优先级',
+      startDate: '开始',
+      dueDate: '截止',
+      columnId: '状态',
+    };
+
+    /**
+     * One log entry as a sentence: what changed, from what to what.
+     * @param {object} entry - log entry.
+     * @returns {Array} children.
+     */
+    function describeChange(entry) {
+      if (entry.field === 'created') return ['创建了卡片'];
+      const label = FIELD_LABEL[entry.field] ?? entry.field;
+      return [
+        h('span', { className: 'dsb-history-field' }, label),
+        ' ',
+        h('span', { className: 'dsb-history-value' }, displayValue(entry.field, entry.from)),
+        ' → ',
+        h('span', { className: 'dsb-history-value' }, displayValue(entry.field, entry.to)),
+      ];
+    }
+
+    /**
+     * Render a logged value for a human. Empty values are a real state ("no due
+     * date"), so they read as a word rather than as a blank.
+     * @param {string} field - field name.
+     * @param {unknown} value - stored value.
+     * @returns {string} text.
+     */
+    function displayValue(field, value) {
+      if (value === null || value === undefined || value === '') return '空';
+      if (field === 'priority') {
+        return PRIORITIES.find((item) => item.id === value)?.label ?? String(value);
+      }
+      if (field === 'description') {
+        const text = String(value).replace(/\s+/g, ' ').trim();
+        return text.length > 24 ? `${text.slice(0, 24)}…` : text;
+      }
+      return String(value);
+    }
+
+    /**
+     * Short absolute time for the log: same day shows the clock, otherwise the
+     * date. The log is read top-down in one sitting, so relative wording
+     * ("3 分钟前") would age badly the moment the drawer stays open.
+     * @param {number} at - epoch milliseconds.
+     * @returns {string} text.
+     */
+    function formatWhen(at) {
+      const date = new Date(Number(at) || Date.now());
+      const pad = (value) => String(value).padStart(2, '0');
+      const clock = `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+      const today = new Date();
+      const sameDay =
+        date.getFullYear() === today.getFullYear() &&
+        date.getMonth() === today.getMonth() &&
+        date.getDate() === today.getDate();
+      if (sameDay) return clock;
+      const sameYear = date.getFullYear() === today.getFullYear();
+      const day = `${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+      return sameYear ? `${day} ${clock}` : `${date.getFullYear()}-${day}`;
+    }
+
+    /**
      * The card drawer: every field the board stores, and a delete that says what
      * it does. Edits save on blur, not on a Save button — a board has no draft
      * state, and a Save button would only exist to be forgotten.
@@ -1385,6 +1527,31 @@ window.__ModuleLoader__.load({
       const commitDescription = () => {
         if (description !== (card.description ?? '')) void onChange({ description });
       };
+
+      /**
+       * A native date input only opens its calendar from the small glyph at the
+       * right edge; anywhere else the click just focuses the field. Opening the
+       * picker on the field's own click makes the whole control behave like the
+       * button it looks like.
+       */
+      const dateInput = (id, value, set) =>
+        h('input', {
+          id,
+          type: 'date',
+          className: 'dsb-control dsb-date',
+          value: value ?? '',
+          onClick: (event) => {
+            const input = event.currentTarget;
+            if (typeof input.showPicker !== 'function') return;
+            try {
+              input.showPicker();
+            } catch {
+              // Already open, or refused for lacking a user gesture: the field
+              // still works, it just needs the glyph clicked.
+            }
+          },
+          onChange: (event) => set(event.target.value || null),
+        });
 
       return h(
         'aside',
@@ -1460,28 +1627,10 @@ window.__ModuleLoader__.load({
                 h('option', { key: priority.id, value: priority.id }, priority.label),
               ),
             ),
+            h('label', { className: 'dsb-field-label', htmlFor: 'dsb-start' }, '开始'),
+            dateInput('dsb-start', card.startDate, (value) => void onChange({ startDate: value })),
             h('label', { className: 'dsb-field-label', htmlFor: 'dsb-due' }, '截止'),
-            // A native date input only opens its calendar from the small glyph
-            // at the right edge; anywhere else the click just focuses the field.
-            // Opening the picker on the field's own click makes the whole
-            // control behave like the button it looks like.
-            h('input', {
-              id: 'dsb-due',
-              type: 'date',
-              className: 'dsb-control dsb-date',
-              value: card.dueDate ?? '',
-              onClick: (event) => {
-                const input = event.currentTarget;
-                if (typeof input.showPicker !== 'function') return;
-                try {
-                  input.showPicker();
-                } catch {
-                  // Already open, or refused for lacking a user gesture: the
-                  // field still works, it just needs the glyph clicked.
-                }
-              },
-              onChange: (event) => void onChange({ dueDate: event.target.value || null }),
-            }),
+            dateInput('dsb-due', card.dueDate, (value) => void onChange({ dueDate: value })),
           ),
           h('textarea', {
             className: 'dsb-text',
@@ -1491,6 +1640,7 @@ window.__ModuleLoader__.load({
             onChange: (event) => setDescription(event.target.value),
             onBlur: commitDescription,
           }),
+          h(History, { history: card.history }),
         ),
         h(
           'div',
