@@ -562,13 +562,6 @@ a.feh-api:hover .feh-api-url { color: var(--dsw-alias-link); text-decoration: un
   color: var(--dsw-alias-label-primary);
 }
 .feh-cap { color: var(--dsw-alias-label-tertiary); font-size: 11px; }
-.feh-link {
-  color: var(--dsw-alias-link);
-  text-decoration: none;
-  font-size: 12px;
-}
-.feh-link:hover { text-decoration: underline; }
-
 /* ---- lightbox ---- */
 .feh-zoom {
   position: fixed;
@@ -942,6 +935,7 @@ a.feh-api:hover .feh-api-url { color: var(--dsw-alias-link); text-decoration: un
                 h(
                   'div',
                   { className: 'feh-mp-steps' },
+                  h('h3', { className: 'feh-box-title' }, '小程序生产发布'),
                   h(
                     'ol',
                     { className: 'feh-steps' },
@@ -967,12 +961,6 @@ a.feh-api:hover .feh-api-url { color: var(--dsw-alias-link); text-decoration: un
                       ),
                     ),
                   ),
-                  h('a', {
-                    className: 'feh-link',
-                    href: 'http://192.168.91.130:3000/help',
-                    target: '_blank',
-                    rel: 'noreferrer noopener',
-                  }, '测试环境 CI'),
                 ),
               ),
             ),
