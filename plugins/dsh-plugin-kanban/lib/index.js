@@ -147,8 +147,7 @@ function registerBridge(ctx, store) {
             project.columns.push({
               id: randomUUID(),
               name: String(body.name ?? '新列').slice(0, 60),
-              isFinal: body.isFinal === true,
-              builtIn: false,
+              isFinal: false,
             });
           }).then((document) => ({ ok: true, board: document })),
         ),
@@ -160,27 +159,28 @@ function registerBridge(ctx, store) {
             if (!column) throw new Error('column not found');
             if (typeof body.name === 'string') column.name = body.name.slice(0, 60);
             if ('isFinal' in body) {
-              // The built-in ends define where a card starts and finishes; if
-              // the done column could stop being final, finished work would
-              // render as in-progress. Renaming stays open.
-              if (column.builtIn) throw new Error(`「${column.name}」是系统内置列，只能改名，不能改变它的类型`);
-              column.isFinal = body.isFinal === true;
+              const next = body.isFinal === true;
+              // One column is where work ends. Marking a new one moves the
+              // finish line instead of adding a second one: two "done" columns
+              // would make the same card read as both finished and not.
+              if (next) {
+                for (const item of project.columns) item.isFinal = item.id === column.id;
+              } else {
+                column.isFinal = false;
+              }
             }
           }).then((document) => ({ ok: true, board: document })),
         ),
 
-        // A column can only be deleted once it is empty, and the built-in ends
-        // can never be deleted at all. Deleting a column used to take its cards
-        // with it, which is silent data loss the user never asked for; moving
-        // the cards out first is one drag, and refusing is recoverable.
+        // A column can only be deleted once it is empty. Deleting a column used
+        // to take its cards with it, which is silent data loss the user never
+        // asked for; moving the cards out first is one drag, and refusing is
+        // recoverable.
         makeRoute(ctx, '/column/delete', async (body) =>
           store.update((document) => {
             const project = requireProject(document, body.projectId);
             const column = project.columns.find((item) => item.id === body.columnId);
             if (!column) throw new Error('column not found');
-            if (column.builtIn) {
-              throw new Error(`「${column.name}」是系统内置列，不能删除，可以改名`);
-            }
             if (project.columns.length <= 1) throw new Error('the last column cannot be deleted');
             const count = project.cards.filter((card) => card.columnId === column.id).length;
             if (count > 0) {

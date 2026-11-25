@@ -119,22 +119,9 @@ body[data-ds-dark-theme] .dsb-root {
   height: 44px;
   padding: 4px 10px 0 14px;
 }
-/* A column being dragged dims in place, so the slot it left is visible as the
-   gap the drop will fill. */
-.dsb-lane[data-column-dragging="true"] { opacity: 0.35; }
-/* Insertion point while a column is in the air: an edge on the lane the column
-   would land beside. A shadow rather than a border, so nothing reflows. */
-.dsb-lane[data-col-drop="before"] {
-  box-shadow: inset 2px 0 0 var(--dsw-alias-brand-primary);
-}
-.dsb-lane[data-col-drop="after"] {
-  box-shadow: inset -2px 0 0 var(--dsw-alias-brand-primary);
-}
-/* The grip holds the status mark and is the only draggable part of the header:
-   the name and the buttons beside it stay click targets. It is a little wider
-   than the mark so the target is easy to hit, and pulled left so the mark still
-   lines up with the header padding. */
-.dsb-lane-grip {
+/* The status mark. Columns are reordered in the settings page, so nothing here
+   is a drag handle: the header is a label, not a control. */
+.dsb-lane-mark {
   display: inline-flex;
   flex: 0 0 auto;
   align-items: center;
@@ -142,15 +129,11 @@ body[data-ds-dark-theme] .dsb-root {
   width: 20px;
   height: 20px;
   margin-left: -4px;
-  border-radius: 4px;
   color: var(--dsw-alias-label-tertiary);
-  cursor: grab;
 }
-.dsb-lane-grip:hover { background: var(--dsw-alias-interactive-bg-hover); }
-.dsb-lane-grip:active { cursor: grabbing; }
 /* The done column's mark carries the same green the rest of the product uses
    for finished work, so the column is recognisable without reading its name. */
-.dsb-lane[data-final="true"] .dsb-lane-grip { color: var(--dsw-alias-state-success-primary); }
+.dsb-lane[data-final="true"] .dsb-lane-mark { color: var(--dsw-alias-state-success-primary); }
 .dsb-lane-name {
   flex: 1 1 auto;
   min-width: 0;
@@ -309,25 +292,29 @@ body[data-ds-dark-theme] .dsb-root {
   background: var(--dsw-alias-brand-primary);
 }
 
-.dsb-new-column {
+.dsb-settings-btn {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  justify-content: center;
   flex: 0 0 auto;
+  width: 28px;
   height: 28px;
-  padding: 0 10px 0 8px;
   border: 0;
   border-radius: 8px;
+  padding: 0;
   background: transparent;
   color: var(--dsw-alias-label-secondary);
-  font: 400 12px/18px var(--dsw-font-family);
   cursor: pointer;
 }
-.dsb-new-column:hover {
+.dsb-settings-btn:hover {
   background: var(--dsw-alias-interactive-bg-hover);
   color: var(--dsw-alias-label-primary);
 }
-.dsb-new-column:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary); outline-offset: 1px; }
+.dsb-settings-btn:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary); outline-offset: 1px; }
+.dsb-settings-btn[aria-expanded="true"] {
+  background: var(--dsw-alias-interactive-bg-active);
+  color: var(--dsw-alias-label-primary);
+}
 
 .dsb-icon-btn {
   display: inline-flex;
@@ -374,11 +361,12 @@ body[data-ds-dark-theme] .dsb-root {
 
 .dsb-menu {
   position: absolute;
-  z-index: 20;
+  /* Always the topmost layer: a menu is opened from whatever is underneath it,
+     including the settings sheet, and must never be painted behind its source. */
+  z-index: 31;
   min-width: 200px;
   max-width: 280px;
-  padding: 4px;
-  border-radius: 10px;
+  padding: 4px;  border-radius: 10px;
   border: 1px solid var(--dsw-alias-border-l2);
   background: var(--dsw-alias-bg-layer-3);
   box-shadow: 0 8px 24px -6px color-mix(in srgb, #000 22%, transparent);
@@ -432,7 +420,7 @@ body[data-ds-dark-theme] .dsb-root {
 .dsb-scrim {
   position: fixed;
   inset: 0;
-  z-index: 15;
+  z-index: 30;
   border: 0;
   padding: 0;
   background: transparent;
@@ -495,6 +483,182 @@ body[data-ds-dark-theme] .dsb-root {
   .dsb-drawer-scrim,
   .dsb-drawer-scrim[data-closing="true"] { animation-duration: 1ms; }
 }
+
+/* ---- settings sheet: column order and the finish line live here, not in the
+   board itself. A lane header is a label; rearranging the board should not
+   require finding a handle and dragging carefully in the middle of the work. */
+.dsb-settings-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 24;
+  border: 0;
+  padding: 0;
+  background: color-mix(in srgb, var(--dsw-alias-bg-base) 55%, transparent);
+  -webkit-backdrop-filter: blur(3px) saturate(115%);
+  backdrop-filter: blur(3px) saturate(115%);
+  cursor: default;
+  animation: dsb-scrim-in 160ms ease;
+}
+.dsb-settings {
+  box-sizing: border-box;
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 25;
+  display: flex;
+  flex-direction: column;
+  width: min(460px, 100%);
+  border-left: 1px solid var(--dsw-alias-border-l2);
+  background: var(--dsw-alias-bg-layer-1);
+  box-shadow: -12px 0 32px -18px color-mix(in srgb, #000 30%, transparent);
+  animation: dsb-drawer-in 180ms cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .dsb-settings-scrim,
+  .dsb-settings { animation-duration: 1ms; }
+}
+.dsb-settings-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  flex: 0 0 auto;
+  padding: 16px 12px 8px 20px;
+}
+.dsb-settings-heading { min-width: 0; }
+.dsb-settings-title {
+  margin: 0;
+  font: 500 15px/22px var(--dsw-font-family);
+}
+.dsb-settings-sub {
+  margin: 2px 0 0;
+  color: var(--dsw-alias-label-tertiary);
+  font: 400 12px/18px var(--dsw-font-family);
+}
+.dsb-settings-body {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 8px 20px 20px;
+  overflow-y: auto;
+}
+/* The list is one bordered block with hairline dividers, so a row reads as a
+   member of a set rather than a stack of separate controls. */
+.dsb-settings-list {
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.dsb-settings-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px 0 10px;
+  height: 48px;
+  background: transparent;
+}
+.dsb-settings-row + .dsb-settings-row { border-top: 1px solid var(--dsw-alias-border-l1); }
+.dsb-settings-row[data-dragging="true"] { opacity: 0.35; }
+.dsb-settings-row[data-drop="before"] { box-shadow: inset 0 2px 0 var(--dsw-alias-brand-primary); }
+.dsb-settings-row[data-drop="after"] { box-shadow: inset 0 -2px 0 var(--dsw-alias-brand-primary); }
+/* The grip is the whole handle here: this sheet exists to reorder, so the row
+   has no other job to protect. */
+.dsb-settings-grip {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-left: -2px;
+  border: 0;
+  border-radius: 4px;
+  padding: 0;
+  background: transparent;
+  color: var(--dsw-alias-label-tertiary);
+  cursor: grab;
+}
+.dsb-settings-grip:hover { background: var(--dsw-alias-interactive-bg-hover); }
+.dsb-settings-grip:active { cursor: grabbing; }
+.dsb-settings-grip:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary); outline-offset: 1px; }
+.dsb-settings-mark {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  color: var(--dsw-alias-label-tertiary);
+}
+.dsb-settings-row[data-final="true"] .dsb-settings-mark { color: var(--dsw-alias-state-success-primary); }
+.dsb-settings-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 400 14px/20px var(--dsw-font-family);
+}
+.dsb-settings-count {
+  flex: 0 0 auto;
+  color: var(--dsw-alias-label-tertiary);
+  font: 400 12px/18px var(--dsw-font-family);
+  font-variant-numeric: tabular-nums;
+}
+/* A switch, not a checkbox: "this column is where work ends" is a state of the
+   column, and a switch reads as state where a tick reads as a task. */
+.dsb-switch {
+  position: relative;
+  flex: 0 0 auto;
+  width: 40px;
+  height: 24px;
+  border: 0;
+  border-radius: 999px;
+  padding: 0;
+  background: var(--dsw-alias-interactive-bg-active);
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+.dsb-switch[aria-checked="true"] { background: var(--dsw-alias-label-primary); }
+.dsb-switch:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary); outline-offset: 2px; }
+.dsb-switch::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--dsw-alias-bg-base);
+  transition: transform 120ms ease;
+}
+.dsb-switch[aria-checked="true"]::after { transform: translateX(16px); }
+@media (prefers-reduced-motion: reduce) {
+  .dsb-switch,
+  .dsb-switch::after { transition: none; }
+}
+.dsb-settings-add {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 44px;
+  margin-top: 4px;
+  padding: 0 14px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--dsw-alias-label-secondary);
+  font: 400 13px/18px var(--dsw-font-family);
+  cursor: pointer;
+  text-align: left;
+}
+.dsb-settings-add:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-primary);
+}
+.dsb-settings-add:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary); outline-offset: 1px; }
 .dsb-drawer-head {
   display: flex;
   align-items: center;
@@ -686,6 +850,15 @@ body[data-ds-dark-theme] .dsb-root {
     const PlusIcon = (p) => h(Icon, { ...p, d: 'M12 5v14M5 12h14' });
     const MoreIcon = (p) => h(Icon, { ...p, d: 'M6 12h.01M12 12h.01M18 12h.01', stroke: 2.2 });
     const CloseIcon = (p) => h(Icon, { ...p, d: 'M6 6l12 12M18 6L6 18' });
+    /** Sliders: the settings button, and nothing else. */
+    const SettingsIcon = (p) =>
+      h(Icon, {
+        ...p,
+        d: 'M4 7h10M18 7h2M4 17h4M12 17h8M4 12h6M14 12h6M16 5v4M10 10v4M8 15v4',
+      });
+    /** Six dots: the reorder handle in the settings sheet. */
+    const GripIcon = (p) =>
+      h(Icon, { ...p, d: 'M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01', stroke: 2.4 });
 
     /**
      * The column's state as a mark: an open ring for work in flight, a filled
@@ -775,30 +948,6 @@ body[data-ds-dark-theme] .dsb-root {
     // -------------------------------------------------------------- components
 
     /**
-     * Which column edge the pointer is closest to, given the lane container and
-     * the pointer x. Measured against the container rather than a single lane,
-     * so the gaps between lanes and the empty strip to the right of the last
-     * one still resolve to a real drop target instead of swallowing the drop.
-     *
-     * @param {Element} container - the `.dsb-lanes` element.
-     * @param {number} clientX - pointer x.
-     * @returns {{columnId: string, edge: 'before'|'after'}|null} target.
-     */
-    function columnTargetAt(container, clientX) {
-      const lanes = [...container.querySelectorAll('[data-column-id]')];
-      if (lanes.length === 0) return null;
-      for (const lane of lanes) {
-        const box = lane.getBoundingClientRect();
-        // Past the halfway point of this lane, the pointer is pointing at the
-        // next slot; before it, at this one.
-        if (clientX < box.left + box.width / 2) {
-          return { columnId: lane.getAttribute('data-column-id'), edge: 'before' };
-        }
-      }
-      return { columnId: lanes[lanes.length - 1].getAttribute('data-column-id'), edge: 'after' };
-    }
-
-    /**
      * The whole board page.
      */
     function BoardPage() {
@@ -808,9 +957,8 @@ body[data-ds-dark-theme] .dsb-root {
       const [menu, setMenu] = useState(null);
       const [dragging, setDragging] = useState(null);
       const [dropTarget, setDropTarget] = useState(null);
-      /** Column being dragged, and the edge it would land on. */
-      const [draggingColumn, setDraggingColumn] = useState(null);
-      const [columnDrop, setColumnDrop] = useState(null);
+      /** True while the settings sheet is open. */
+      const [settingsOpen, setSettingsOpen] = useState(false);
       /** True while the drawer plays its exit animation. */
       const [closing, setClosing] = useState(false);
 
@@ -910,6 +1058,12 @@ body[data-ds-dark-theme] .dsb-root {
             setMenu(null);
             return;
           }
+          if (settingsOpen) {
+            event.preventDefault();
+            event.stopPropagation();
+            setSettingsOpen(false);
+            return;
+          }
           if (!openCardId) return;
           event.preventDefault();
           event.stopPropagation();
@@ -917,7 +1071,7 @@ body[data-ds-dark-theme] .dsb-root {
         };
         window.addEventListener('keydown', onKeyDown, true);
         return () => window.removeEventListener('keydown', onKeyDown, true);
-      }, [menu, openCardId, closeDrawer]);
+      }, [menu, settingsOpen, openCardId, closeDrawer]);
 
       const cardsOf = (columnId) => project?.cards.filter((card) => card.columnId === columnId) ?? [];
 
@@ -959,9 +1113,9 @@ body[data-ds-dark-theme] .dsb-root {
 
       /**
        * Reorder columns. Same optimistic shape as moving a card: the lane jumps
-       * to where the pointer left it, then the host document replaces the guess.
+       * to where the row was dropped, then the host document replaces the guess.
        */
-      const moveColumn = async (columnId, columnIds) => {
+      const moveColumn = async (columnIds) => {
         if (!project) return;
         setBoard((current) => {
           if (!current) return current;
@@ -988,56 +1142,6 @@ body[data-ds-dark-theme] .dsb-root {
       const onDragEnd = () => {
         setDragging(null);
         setDropTarget(null);
-      };
-
-      /**
-       * Column drag. The grip in the header is the handle: the lane body
-       * already belongs to the cards, which have a drag of their own.
-       */
-      const onColumnDragStart = (event, column) => {
-        setDraggingColumn(column.id);
-        event.dataTransfer.effectAllowed = 'move';
-        event.dataTransfer.setData('text/plain', column.id);
-      };
-
-      const onColumnDragEnd = () => {
-        setDraggingColumn(null);
-        setColumnDrop(null);
-      };
-
-      const onColumnDragOver = (event) => {
-        if (!draggingColumn) return;
-        event.preventDefault();
-        const target = columnTargetAt(event.currentTarget, event.clientX);
-        // Hovering the column that is already in the air promises nothing: the
-        // drop there would be a no-op, so no edge is drawn.
-        if (!target || target.columnId === draggingColumn) {
-          setColumnDrop(null);
-          return;
-        }
-        setColumnDrop(target);
-      };
-
-      const onColumnDrop = (event) => {
-        if (!draggingColumn) return;
-        event.preventDefault();
-        const target = columnTargetAt(event.currentTarget, event.clientX);
-        const moving = draggingColumn;
-        setDraggingColumn(null);
-        setColumnDrop(null);
-        if (!target || target.columnId === moving) return;
-
-        const ids = project.columns.map((item) => item.id);
-        const from = ids.indexOf(moving);
-        // The list without the column being moved is what the pointer is
-        // actually pointing at, so the target index is computed there.
-        const rest = ids.filter((id) => id !== moving);
-        const anchor = rest.indexOf(target.columnId);
-        if (from === -1 || anchor === -1) return;
-        const at = target.edge === 'before' ? anchor : anchor + 1;
-        if (at === from) return;
-        const next = [...rest.slice(0, at), moving, ...rest.slice(at)];
-        void moveColumn(moving, next);
       };
 
       const onLaneDragOver = (event, column) => {
@@ -1067,8 +1171,9 @@ body[data-ds-dark-theme] .dsb-root {
         'div',
         { className: 'dsb-root' },
 
-        // ---- head: one board, so the only control is "new column". There is
-        // no project name to show and no card total to count against.
+        // ---- head: one board, and one control. Everything that edits the
+        // board's shape — column order, the finish line, adding a column —
+        // lives behind the settings button instead of on the lanes themselves.
         h(
           'div',
           { className: 'dsb-head' },
@@ -1076,26 +1181,20 @@ body[data-ds-dark-theme] .dsb-root {
             'button',
             {
               type: 'button',
-              className: 'dsb-new-column',
-              onClick: () => void mutate('/column/create', { projectId: project.id }),
+              className: 'dsb-settings-btn',
+              onClick: () => setSettingsOpen((open) => !open),
+              title: '看板设置',
+              'aria-label': '看板设置',
+              'aria-expanded': settingsOpen ? 'true' : 'false',
             },
-            h(PlusIcon, { size: 13 }),
-            '新建列',
+            h(SettingsIcon, { size: 16 }),
           ),
         ),
 
         // ---- lanes
         h(
           'div',
-          {
-            className: 'dsb-lanes',
-            // Column drops are resolved here, not per lane: a release between
-            // two lanes or past the last one has no lane under the pointer, and
-            // a handler that lives on the lane would never fire. The container
-            // always has the pointer.
-            onDragOver: onColumnDragOver,
-            onDrop: onColumnDrop,
-          },
+          { className: 'dsb-lanes' },
           project.columns.map((column) =>
             h(Lane, {
               key: column.id,
@@ -1120,15 +1219,27 @@ body[data-ds-dark-theme] .dsb-root {
               onDragEnd,
               onDragOverLane: onLaneDragOver,
               onDropLane: onLaneDrop,
-              columnDragging: draggingColumn === column.id,
-              columnDrop:
-                columnDrop?.columnId === column.id && draggingColumn ? columnDrop.edge : null,
-              columnDragActive: draggingColumn !== null,
-              onColumnDragStart,
-              onColumnDragEnd,
             }),
           ),
         ),
+
+        // ---- settings sheet: column order, the finish line, adding a column.
+        settingsOpen &&
+          h(SettingsSheet, {
+            project,
+            onClose: () => setSettingsOpen(false),
+            onReorder: (columnIds) => moveColumn(columnIds),
+            onToggleFinal: async (column, next) => {
+              await mutate('/column/update', { projectId: project.id, columnId: column.id, isFinal: next });
+            },
+            onCreate: async () => {
+              await mutate('/column/create', { projectId: project.id, name: '新列' });
+            },
+            onOpenColumnMenu: (event, column) => {
+              const box = event.currentTarget.getBoundingClientRect();
+              setMenu({ columnId: column.id, x: box.right - 200, y: box.bottom + 4 });
+            },
+          }),
 
         // ---- the column menu. The key remounts the layer whenever a different
         // column is opened, so a half-finished rename or delete-confirm never
@@ -1147,10 +1258,10 @@ body[data-ds-dark-theme] .dsb-root {
               projectId: project.id,
               columnId: menu.columnId,
             });
-            // The host refuses a column that is built in or still holds cards.
-            // Its answer is the truth (the board may have changed in another
-            // window since the menu opened), so keep the menu open and say why
-            // instead of closing on an error the user never sees.
+            // The host refuses a column that still holds cards. Its answer is
+            // the truth (the board may have changed in another window since the
+            // menu opened), so keep the menu open and say why instead of
+            // closing on an error the user never sees.
             if (!payload.ok) return payload.error ?? '删除失败';
             setMenu(null);
             return null;
@@ -1234,11 +1345,6 @@ body[data-ds-dark-theme] .dsb-root {
         onDragEnd,
         onDragOverLane,
         onDropLane,
-        columnDragging,
-        columnDrop,
-        columnDragActive,
-        onColumnDragStart,
-        onColumnDragEnd,
       } = props;
 
       const [over, setOver] = useState(false);
@@ -1268,16 +1374,9 @@ body[data-ds-dark-theme] .dsb-root {
           className: 'dsb-lane',
           'data-over': over && draggingId ? 'true' : 'false',
           'data-final': column.isFinal ? 'true' : 'false',
-          'data-column-dragging': columnDragging ? 'true' : 'false',
-          // Which edge a column in the air would land on. A card drag never
-          // sets this, so the two indicators cannot show at once.
-          'data-col-drop': columnDrop ?? undefined,
           'data-column-id': column.id,
           'aria-label': column.name,
           onDragOver: (event) => {
-            // A column drag is handled by the lane container, which sees the
-            // gaps between lanes too. Only a card drag belongs to this element.
-            if (columnDragActive) return;
             setOver(true);
             onDragOverLane(event, column);
           },
@@ -1287,26 +1386,15 @@ body[data-ds-dark-theme] .dsb-root {
           },
           onDrop: (event) => {
             setOver(false);
-            if (columnDragActive) return;
             onDropLane(event, column);
           },
         },
         h(
           'div',
           { className: 'dsb-lane-head' },
-          // The grip is the handle, not the whole header: the buttons beside it
-          // are click targets, and a press that turns into a drag would eat the
-          // click the user meant to make.
           h(
             'span',
-            {
-              className: 'dsb-lane-grip',
-              draggable: true,
-              title: '拖动这一列',
-              'aria-label': `拖动「${column.name}」这一列`,
-              onDragStart: (event) => onColumnDragStart(event, column),
-              onDragEnd: onColumnDragEnd,
-            },
+            { className: 'dsb-lane-mark', 'aria-hidden': true },
             h(StatusIcon, { done: column.isFinal, size: 14 }),
           ),
           h('span', { className: 'dsb-lane-name' }, column.name),
@@ -1395,6 +1483,225 @@ body[data-ds-dark-theme] .dsb-root {
     }
 
     /**
+     * The settings sheet: where the board's shape is edited.
+     *
+     * Column order and the finish line live here rather than on the board. A
+     * lane header is a label you read while working; making it also a drag
+     * handle means a mis-press while scanning the board rearranges it. Editing
+     * shape is a deliberate act, so it gets its own surface.
+     */
+    function SettingsSheet(props) {
+      const { project, onClose, onReorder, onToggleFinal, onCreate, onOpenColumnMenu } = props;
+      /** Column being dragged inside the list, and the row it would land on. */
+      const [movingId, setMovingId] = useState(null);
+      const [dropAt, setDropAt] = useState(null);
+      const rowRefs = useRef({});
+
+      const cardsIn = (columnId) => project.cards.filter((card) => card.columnId === columnId).length;
+
+      /** Which row edge the pointer is closest to, measured over the whole list. */
+      const rowTargetAt = (clientY) => {
+        const rows = project.columns;
+        for (const column of rows) {
+          const box = rowRefs.current[column.id]?.getBoundingClientRect();
+          if (!box) continue;
+          if (clientY < box.top + box.height / 2) return { columnId: column.id, edge: 'before' };
+        }
+        const last = rows[rows.length - 1];
+        return last ? { columnId: last.id, edge: 'after' } : null;
+      };
+
+      const onRowDragStart = (event, column) => {
+        setMovingId(column.id);
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.setData('text/plain', column.id);
+      };
+
+      const onRowDragEnd = () => {
+        setMovingId(null);
+        setDropAt(null);
+      };
+
+      const onRowDragOver = (event) => {
+        if (!movingId) return;
+        event.preventDefault();
+        const target = rowTargetAt(event.clientY);
+        // Hovering the row that is already in the air promises nothing.
+        if (!target || target.columnId === movingId) {
+          setDropAt(null);
+          return;
+        }
+        setDropAt(target);
+      };
+
+      const onRowDrop = (event) => {
+        if (!movingId) return;
+        event.preventDefault();
+        const target = rowTargetAt(event.clientY);
+        const moving = movingId;
+        setMovingId(null);
+        setDropAt(null);
+        if (!target || target.columnId === moving) return;
+        const ids = project.columns.map((column) => column.id);
+        const from = ids.indexOf(moving);
+        const rest = ids.filter((id) => id !== moving);
+        const anchor = rest.indexOf(target.columnId);
+        if (from === -1 || anchor === -1) return;
+        const at = target.edge === 'before' ? anchor : anchor + 1;
+        if (at === from) return;
+        void onReorder([...rest.slice(0, at), moving, ...rest.slice(at)]);
+      };
+
+      /**
+       * Keyboard reordering. A drag is not the only way to move a row: focus the
+       * handle and use the arrow keys, which is the only way this works without
+       * a pointer.
+       */
+      const onGripKeyDown = (event, column, index) => {
+        const delta = event.key === 'ArrowUp' ? -1 : event.key === 'ArrowDown' ? 1 : 0;
+        if (delta === 0) return;
+        event.preventDefault();
+        const at = index + delta;
+        if (at < 0 || at >= project.columns.length) return;
+        const ids = project.columns.map((item) => item.id);
+        const next = [...ids];
+        next.splice(index, 1);
+        next.splice(at, 0, column.id);
+        void onReorder(next);
+      };
+
+      const row = (column, index) => {
+        const drop = dropAt?.columnId === column.id && movingId ? dropAt.edge : null;
+        return h(
+          'div',
+          {
+            key: column.id,
+            className: 'dsb-settings-row',
+            'data-column-id': column.id,
+            'data-final': column.isFinal ? 'true' : 'false',
+            'data-dragging': movingId === column.id ? 'true' : 'false',
+            'data-drop': drop ?? undefined,
+            ref: (element) => {
+              rowRefs.current[column.id] = element;
+            },
+          },
+          h(
+            'button',
+            {
+              type: 'button',
+              className: 'dsb-settings-grip',
+              draggable: true,
+              title: '拖动排序，或用上下方向键',
+              'aria-label': `调整「${column.name}」的位置`,
+              onDragStart: (event) => onRowDragStart(event, column),
+              onDragEnd: onRowDragEnd,
+              onKeyDown: (event) => onGripKeyDown(event, column, index),
+            },
+            h(GripIcon, { size: 14 }),
+          ),
+          h(
+            'span',
+            { className: 'dsb-settings-mark', 'aria-hidden': true },
+            h(StatusIcon, { done: column.isFinal, size: 15 }),
+          ),
+          h('span', { className: 'dsb-settings-name' }, column.name),
+          h('span', { className: 'dsb-settings-count' }, String(cardsIn(column.id))),
+          h(
+            'button',
+            {
+              type: 'button',
+              className: 'dsb-switch',
+              role: 'switch',
+              'aria-checked': column.isFinal ? 'true' : 'false',
+              'aria-label': `「${column.name}」是完成列`,
+              onClick: () => void onToggleFinal(column, !column.isFinal),
+            },
+          ),
+          h(
+            'button',
+            {
+              type: 'button',
+              className: 'dsb-icon-btn',
+              onClick: (event) => onOpenColumnMenu(event, column),
+              title: '列操作',
+              'aria-label': `「${column.name}」的列操作`,
+              'aria-haspopup': 'menu',
+            },
+            h(MoreIcon, { size: 14 }),
+          ),
+        );
+      };
+
+      return [
+        h('button', {
+          key: 'scrim',
+          type: 'button',
+          className: 'dsb-settings-scrim',
+          'aria-label': '关闭设置',
+          onClick: onClose,
+        }),
+        h(
+          'aside',
+          {
+            key: 'sheet',
+            className: 'dsb-settings',
+            role: 'dialog',
+            'aria-modal': 'true',
+            'aria-label': '看板设置',
+          },
+          h(
+            'div',
+            { className: 'dsb-settings-head' },
+            h(
+              'div',
+              { className: 'dsb-settings-heading' },
+              h('h2', { className: 'dsb-settings-title' }, '列'),
+              h('p', { className: 'dsb-settings-sub' }, '拖动以重新排序。完成列中的任务计为已完成。'),
+            ),
+            h(
+              'button',
+              {
+                type: 'button',
+                className: 'dsb-icon-btn',
+                onClick: onClose,
+                title: '关闭',
+                'aria-label': '关闭设置',
+              },
+              h(CloseIcon, { size: 16 }),
+            ),
+          ),
+          h(
+            'div',
+            { className: 'dsb-settings-body' },
+            h(
+              'div',
+              {
+                className: 'dsb-settings-list',
+                role: 'list',
+                // The drop is resolved on the container, not per row: a release
+                // between two rows or past the last one has no row under the
+                // pointer, and a handler on the row would never fire.
+                onDragOver: onRowDragOver,
+                onDrop: onRowDrop,
+              },
+              project.columns.map(row),
+            ),
+            h(
+              'button',
+              {
+                type: 'button',
+                className: 'dsb-settings-add',
+                onClick: () => void onCreate(),
+              },
+              h(PlusIcon, { size: 14 }),
+              '添加列',
+            ),
+          ),
+        ),
+      ];
+    }
+
+    /**
      * The column menu: rename, and delete.
      *
      * Deletes are confirmed in place rather than through `window.confirm`: the
@@ -1434,15 +1741,13 @@ body[data-ds-dark-theme] .dsb-root {
       const columnCards = column ? project.cards.filter((card) => card.columnId === column.id).length : 0;
 
       // Deleting a column is only ever offered, never pre-refused: a greyed
-      // out row explains nothing, and the reason ("built in" / "still has
-      // cards") is more useful than a disabled state nobody can read.
+      // out row explains nothing, and the reason ("still has cards") is more
+      // useful than a disabled state nobody can read.
       const blockedReason = !column
         ? '这一列已经不在了'
-        : column.builtIn
-          ? `「${column.name}」是系统内置列，不能删除，可以改名`
-          : columnCards > 0
-            ? `「${column.name}」里还有 ${columnCards} 张卡片，移走或删除后才能删`
-            : null;
+        : columnCards > 0
+          ? `「${column.name}」里还有 ${columnCards} 张卡片，移走或删除后才能删`
+          : null;
 
       // First click only ever asks. A refusal is spoken right there, where the
       // user clicked, instead of a greyed-out row that explains nothing.
