@@ -1,0 +1,56 @@
+{
+  "name": "dsh-plugin-kanban",
+  "version": "0.1.0",
+  "description": "看板：一个纯 JSON 存储、无账号、无后端的 DSH 原生看板，左栏一个标签就是全部入口。",
+  "license": "MIT",
+  "type": "module",
+  "main": "lib/index.js",
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "board",
+    "kanban",
+    "看板"
+  ],
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./icon": "./icon.svg",
+    "./locale/*.json": "./locale/*.json",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "locale",
+    "icon.svg",
+    "cordis.patch.yml",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18",
+    "dsh": ">=0.2.2-rc.1 <0.3.0-0"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/dsh-tools": ">=0.2.2-rc.1 <0.3.0-0",
+    "@deepseek-ai/schemastery": ">=3.18.4 <4"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-layout"
+      ]
+    }
+  },
+  "author": "iShawnWang",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/iShawnWang/dsh-market.git",
+    "directory": "plugins/dsh-plugin-kanban"
+  },
+  "homepage": "https://github.com/iShawnWang/dsh-market"
+}

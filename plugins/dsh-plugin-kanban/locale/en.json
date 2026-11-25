@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "Kanban",
+    "description": "A kanban board stored as one local JSON file: no account, no server, no sync. The agent reads and writes the same document the panel shows.",
+    "detail": "README.md"
+  }
+}
