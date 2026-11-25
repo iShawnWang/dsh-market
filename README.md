@@ -21,7 +21,7 @@
 | [dsh-plugin-hello](plugins/dsh-plugin-hello/README.md) | 示例插件：左侧边栏新增一个标签，点击后主区域居中显示 `Hello dsh-plugin` | 平台 | 示例 | 0.2.0 |
 | [dsh-plugin-yq-release](plugins/dsh-plugin-yq-release/README.md) | 一句话把分支发到测试环境：自动合并 GitLab、发布 Spug 前端或触发小程序构建，并记录每次发布 | 发布部署 | 发版、内网 | 0.2.0 |
 | [dsh-auto-proxy](plugins/dsh-auto-proxy/README.md) | 网络失败时提醒 agent「本机可能开着代理」，默认仍直连；插件目录下的文本文件记录试通过的代理，跨会话共享 | 工具 | 实验 | 0.3.0 |
-| [dsh-plugin-zentao](plugins/dsh-plugin-zentao/README.md) | 侧边栏「禅道」标签：列出指派给我的 Bug，点开在 DSH 内直接看详情（含截图、动态、属性），只读不写 | 工具 | 内网 | 0.1.0 |
+| [dsh-plugin-zentao](plugins/dsh-plugin-zentao/README.md) | 侧边栏「禅道」标签：列出指派给我的 Bug，点开在 DSH 内直接看详情（含截图、动态、属性），只读不写 | 工具 | 内网 | 0.1.1 |
 
 ## 新增修改插件
 
