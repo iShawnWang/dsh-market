@@ -15,7 +15,7 @@
 import { randomUUID } from 'node:crypto';
 import { defineTool } from '@deepseek-ai/dsh-tools';
 import { normalize } from './store.js';
-import { BoardStore, PRIORITIES, logChange, logIfChanged, nextCardNumber, requireCard, requireProject, resolveDataFile } from './store.js';
+import { BoardStore, PRIORITIES, logChange, logIfChanged, nextCardNumber, pickProject, requireCard, requireProject, resolveDataFile } from './store.js';
 
 export { Config } from './config.js';
 
@@ -211,39 +211,6 @@ function registerBridge(ctx, store) {
           }).then((document) => ({ ok: true, board: document })),
         ),
 
-        makeRoute(ctx, '/project/create', async (body) =>
-          store.update((document) => {
-            const now = Date.now();
-            document.projects.push({
-              id: randomUUID(),
-              name: String(body.name ?? '新项目').slice(0, 60),
-              columns: [
-                { id: randomUUID(), name: '待办', isFinal: false, builtIn: true },
-                { id: randomUUID(), name: '进行中', isFinal: false, builtIn: false },
-                { id: randomUUID(), name: '已完成', isFinal: true, builtIn: true },
-              ],
-              cards: [],
-              createdAt: now,
-              updatedAt: now,
-            });
-          }).then((document) => ({ ok: true, board: document })),
-        ),
-
-        makeRoute(ctx, '/project/update', async (body) =>
-          store.update((document) => {
-            const project = requireProject(document, body.projectId);
-            if (typeof body.name === 'string') project.name = body.name.slice(0, 60);
-          }).then((document) => ({ ok: true, board: document })),
-        ),
-
-        makeRoute(ctx, '/project/delete', async (body) =>
-          store.update((document) => {
-            requireProject(document, body.projectId);
-            if (document.projects.length <= 1) throw new Error('the last project cannot be deleted');
-            document.projects = document.projects.filter((item) => item.id !== body.projectId);
-          }).then((document) => ({ ok: true, board: document })),
-        ),
-
         // Wholesale replace. Used by import/export and by the panel's own
         // "reset" affordance; it is the only route that trusts its input, so it
         // runs the document through the same normalizer a file read does.
@@ -323,11 +290,8 @@ function registerTools(ctx, store) {
         sctx.tools.register(
           defineTool({
             name: 'board_view',
-            description:
-              '读看板当前内容：每个项目的列和卡片。默认返回所有项目；给 projectId 只返回那一个。',
-            parameters: {
-              projectId: { type: 'string', description: '只读这个项目；省略则读全部。' },
-            },
+            description: '读看板当前内容：列和卡片。',
+            parameters: {},
             output: {
               schema: {
                 type: 'object',
@@ -340,9 +304,7 @@ function registerTools(ctx, store) {
             },
             async execute(args) {
               const board = await store.read();
-              const projects = args.projectId
-                ? board.projects.filter((project) => project.id === args.projectId)
-                : board.projects;
+              const projects = board.projects.slice(0, 1);
               return {
                 projects: projects.map((project) => ({
                   id: project.id,
@@ -377,7 +339,6 @@ function registerTools(ctx, store) {
               '在看板上新建一张卡片。不知道 columnId 时先用 board_view 读一次。' +
               '新卡片编号由看板分配，不要自己指定。',
             parameters: {
-              projectId: { type: 'string', description: '项目 id。', required: true },
               columnId: { type: 'string', description: '列 id。', required: true },
               title: { type: 'string', description: '卡片标题。', required: true },
               description: { type: 'string', description: '卡片描述，支持 Markdown。' },
@@ -410,7 +371,7 @@ function registerTools(ctx, store) {
             },
             async execute(args) {
               const document = await store.update((draft) => {
-                const project = requireProject(draft, args.projectId);
+                const project = pickProject(draft, args.projectId);
                 const column = project.columns.find((item) => item.id === args.columnId);
                 if (!column) throw new Error('column not found');
                 const now = Date.now();
@@ -430,7 +391,7 @@ function registerTools(ctx, store) {
                 logChange(card, now, 'created');
                 project.cards.push(card);
               });
-              const project = document.projects.find((item) => item.id === args.projectId);
+              const project = pickProject(document, args.projectId);
               const card = project.cards[project.cards.length - 1];
               return { id: card.id, number: card.number, title: card.title };
             },
@@ -445,7 +406,6 @@ function registerTools(ctx, store) {
             name: 'board_move_card',
             description: '把卡片移到另一列，或调整它在同列内的位置。',
             parameters: {
-              projectId: { type: 'string', description: '项目 id。', required: true },
               cardId: { type: 'string', description: '卡片 id。', required: true },
               columnId: { type: 'string', description: '目标列 id；省略表示留在原列。' },
               index: { type: 'number', description: '目标列内的位置，0 表示最上面。' },
@@ -460,7 +420,7 @@ function registerTools(ctx, store) {
             },
             async execute(args) {
               await store.update((draft) => {
-                const project = requireProject(draft, args.projectId);
+                const project = pickProject(draft, args.projectId);
                 const card = requireCard(project, args.cardId);
                 const columnId = args.columnId ?? card.columnId;
                 const column = project.columns.find((item) => item.id === columnId);
@@ -495,16 +455,15 @@ function registerTools(ctx, store) {
 function renderBoard(value) {
   const lines = [];
   for (const project of value.projects ?? []) {
-    lines.push(`${project.name} (${project.id})`);
     for (const column of project.columns ?? []) {
-      lines.push(`  ${column.name} [${column.id}]`);
-      if (column.cards.length === 0) lines.push('    空');
+      lines.push(`${column.name} [${column.id}]`);
+      if (column.cards.length === 0) lines.push('  空');
       for (const card of column.cards) {
         const bits = [`#${card.number} ${card.title} [${card.id}]`];
         if (card.priority) bits.push(card.priority);
         if (card.startDate) bits.push(`${card.startDate} →${card.dueDate ? ` ${card.dueDate}` : ''}`);
         else if (card.dueDate) bits.push(card.dueDate);
-        lines.push(`    ${bits.join(' · ')}`);
+        lines.push(`  ${bits.join(' · ')}`);
       }
     }
   }

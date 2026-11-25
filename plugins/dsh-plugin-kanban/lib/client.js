@@ -71,34 +71,12 @@ body[data-ds-dark-theme] .dsb-root {
 .dsb-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 12px;
   flex: 0 0 auto;
-  min-height: 52px;
-  padding: 0 20px;
-}
-
-.dsb-project {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 28px;
-  padding: 0 8px 0 6px;
-  margin-left: -6px;
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--dsw-alias-label-primary);
-  font: 500 15px/22px var(--dsw-font-family);
-  cursor: pointer;
-}
-.dsb-project:hover { background: var(--dsw-alias-interactive-bg-hover); }
-.dsb-project:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary); outline-offset: 1px; }
-
-.dsb-count {
-  color: var(--dsw-alias-label-tertiary);
-  font: 400 12px/18px var(--dsw-font-family);
-  font-variant-numeric: tabular-nums;
+  min-height: 48px;
+  /* Matches the lane strip gutter so the button lines up with the last lane. */
+  padding: 0 24px;
 }
 
 .dsb-lanes {
@@ -434,11 +412,6 @@ body[data-ds-dark-theme] .dsb-root {
   color: var(--dsw-alias-label-secondary);
   font: 400 12px/17px var(--dsw-font-family);
 }
-.dsb-menu-sep {
-  height: 1px;
-  margin: 4px 6px;
-  background: var(--dsw-alias-border-l2);
-}
 .dsb-menu-confirm {
   display: flex;
   flex-direction: column;
@@ -713,7 +686,6 @@ body[data-ds-dark-theme] .dsb-root {
     const PlusIcon = (p) => h(Icon, { ...p, d: 'M12 5v14M5 12h14' });
     const MoreIcon = (p) => h(Icon, { ...p, d: 'M6 12h.01M12 12h.01M18 12h.01', stroke: 2.2 });
     const CloseIcon = (p) => h(Icon, { ...p, d: 'M6 6l12 12M18 6L6 18' });
-    const ChevronIcon = (p) => h(Icon, { ...p, d: 'M6 9l6 6 6-6' });
 
     /**
      * The column's state as a mark: an open ring for work in flight, a filled
@@ -832,7 +804,6 @@ body[data-ds-dark-theme] .dsb-root {
     function BoardPage() {
       const [board, setBoard] = useState(null);
       const [error, setError] = useState(null);
-      const [activeProjectId, setActiveProjectId] = useState(null);
       const [openCardId, setOpenCardId] = useState(null);
       const [menu, setMenu] = useState(null);
       const [dragging, setDragging] = useState(null);
@@ -888,24 +859,15 @@ body[data-ds-dark-theme] .dsb-root {
         return payload;
       }, []);
 
-      const project = useMemo(() => {
-        if (!board) return null;
-        return (
-          board.projects.find((item) => item.id === activeProjectId) ?? board.projects[0] ?? null
-        );
-      }, [board, activeProjectId]);
+      // One board, always the first project. The document still holds a list
+      // because that is its shape on disk and the conversation tools address
+      // projects by id, but the panel no longer offers a way to add a second.
+      const project = useMemo(() => board?.projects[0] ?? null, [board]);
 
       const openCard = useMemo(() => {
         if (!project || !openCardId) return null;
         return project.cards.find((card) => card.id === openCardId) ?? null;
       }, [project, openCardId]);
-
-      useEffect(() => {
-        if (!board) return;
-        if (!board.projects.some((item) => item.id === activeProjectId)) {
-          setActiveProjectId(board.projects[0]?.id ?? null);
-        }
-      }, [board, activeProjectId]);
 
       /**
        * Close the drawer. Edits save on blur, and unmounting a focused field
@@ -1101,47 +1063,15 @@ body[data-ds-dark-theme] .dsb-root {
         return h('div', { className: 'dsb-root' }, h('div', { className: 'dsb-empty' }, '载入中'));
       }
 
-      const totalCards = project.cards.length;
-
       return h(
         'div',
         { className: 'dsb-root' },
 
-        // ---- head: project name opens the project menu; the + adds a card to
-        // the first lane, which is the only place a new card can sensibly go
-        // without asking a question first.
+        // ---- head: one board, so the only control is "new column". There is
+        // no project name to show and no card total to count against.
         h(
           'div',
           { className: 'dsb-head' },
-          h(
-            'div',
-            { style: { display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 } },
-            h(
-              'button',
-              {
-                type: 'button',
-                className: 'dsb-project',
-                onClick: (event) => {
-                  const box = event.currentTarget.getBoundingClientRect();
-                  setMenu({
-                    kind: 'projects',
-                    x: box.left,
-                    y: box.bottom + 4,
-                  });
-                },
-                'aria-haspopup': 'menu',
-                'aria-expanded': menu?.kind === 'projects',
-              },
-              h('span', { style: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } },
-                project.name),
-              h(ChevronIcon, { size: 12 }),
-            ),
-            h(
-              'span',
-              { className: 'dsb-count', title: `${totalCards} 张卡片`, 'aria-label': `${totalCards} 张卡片` },
-              String(totalCards),
-            ),
-          ),
           h(
             'button',
             {
@@ -1181,7 +1111,6 @@ body[data-ds-dark-theme] .dsb-root {
               onMenu: (event) => {
                 const box = event.currentTarget.getBoundingClientRect();
                 setMenu({
-                  kind: 'column',
                   columnId: column.id,
                   x: box.right - 200,
                   y: box.bottom + 4,
@@ -1201,29 +1130,14 @@ body[data-ds-dark-theme] .dsb-root {
           ),
         ),
 
-        // ---- menus. The key remounts the layer whenever a different menu opens,
-        // so a half-finished rename or delete-confirm never carries over.
+        // ---- the column menu. The key remounts the layer whenever a different
+        // column is opened, so a half-finished rename or delete-confirm never
+        // carries over.
         menu && h(MenuLayer, {
-          key: menu.kind === 'column' ? `column:${menu.columnId}` : 'projects',
+          key: `column:${menu.columnId}`,
           menu,
           project,
-          board,
           onClose: () => setMenu(null),
-          onSelectProject: (id) => {
-            setActiveProjectId(id);
-            setMenu(null);
-          },
-          onCreateProject: async () => {
-            setMenu(null);
-            const payload = await mutate('/project/create', {});
-            const next = payload.board?.projects[payload.board.projects.length - 1];
-            if (next) setActiveProjectId(next.id);
-          },
-          onDeleteProject: async () => {
-            setMenu(null);
-            const payload = await mutate('/project/delete', { projectId: project.id });
-            if (payload.ok) setActiveProjectId(payload.board.projects[0]?.id ?? null);
-          },
           onRenameColumn: async (name) => {
             setMenu(null);
             await mutate('/column/update', { projectId: project.id, columnId: menu.columnId, name });
@@ -1481,15 +1395,14 @@ body[data-ds-dark-theme] .dsb-root {
     }
 
     /**
-     * The menu layer: one popover, two shapes (project switcher, column actions).
+     * The column menu: rename, and delete.
      *
      * Deletes are confirmed in place rather than through `window.confirm`: the
      * native dialog cannot say "move the cards out first", and a destructive
      * action that can only be answered yes/no tends to be answered yes.
      */
     function MenuLayer(props) {
-      const { menu, project, board, onClose, onSelectProject, onCreateProject, onDeleteProject } =
-        props;
+      const { menu, project, onClose } = props;
       const [renaming, setRenaming] = useState(false);
       /** Which delete is waiting for its second click. */
       const [confirming, setConfirming] = useState(null);
@@ -1516,62 +1429,6 @@ body[data-ds-dark-theme] .dsb-root {
       /** Two-step confirm block: the question, then the two buttons. */
       const confirmBlock = (question, onConfirm) =>
         h(ConfirmDelete, { question, onConfirm, onCancel: () => setConfirming(null) });
-
-      if (menu.kind === 'projects') {
-        const projectCards = project.cards.length;
-        return [
-          close,
-          h(
-            'div',
-            { key: 'menu', className: 'dsb-menu', style, role: 'menu' },
-            board.projects.map((item) =>
-              h(
-                'button',
-                {
-                  key: item.id,
-                  type: 'button',
-                  className: 'dsb-menu-item',
-                  role: 'menuitem',
-                  'data-active': item.id === project.id ? 'true' : 'false',
-                  onClick: () => onSelectProject(item.id),
-                },
-                item.name,
-              ),
-            ),
-            h('div', { className: 'dsb-menu-sep' }),
-            h(
-              'button',
-              {
-                type: 'button',
-                className: 'dsb-menu-item',
-                role: 'menuitem',
-                onClick: () => void onCreateProject(),
-              },
-              h(PlusIcon, { size: 13 }),
-              '新建项目',
-            ),
-            board.projects.length > 1
-              ? confirming === 'project'
-                ? confirmBlock(
-                    `删除项目「${project.name}」${projectCards ? `和其中的 ${projectCards} 张卡片` : ''}？无法撤销。`,
-                    () => void onDeleteProject(),
-                  )
-                : h(
-                    'button',
-                    {
-                      type: 'button',
-                      className: 'dsb-menu-item',
-                      role: 'menuitem',
-                      'data-tone': 'danger',
-                      onClick: () => setConfirming('project'),
-                    },
-                    h(CloseIcon, { size: 13 }),
-                    '删除项目',
-                  )
-              : null,
-          ),
-        ];
-      }
 
       const column = project.columns.find((item) => item.id === menu.columnId);
       const columnCards = column ? project.cards.filter((card) => card.columnId === column.id).length : 0;

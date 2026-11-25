@@ -322,6 +322,24 @@ export function requireProject(document, projectId) {
 }
 
 /**
+ * The project a tool call means: the one it names, or the only board there is.
+ *
+ * The panel shows one board and offers no way to make a second, so a model
+ * calling a tool should not have to read the board first just to learn an id
+ * it cannot affect. An explicit id still wins, which keeps an older
+ * conversation working against a document that does hold several.
+ * @param {object} document - board document.
+ * @param {string} [projectId] - project id, if the caller has one.
+ * @returns {object} project.
+ */
+export function pickProject(document, projectId) {
+  if (projectId) return requireProject(document, projectId);
+  const project = document.projects[0];
+  if (!project) throw new Error('the board has no project');
+  return project;
+}
+
+/**
  * Find a card inside a project.
  * @param {object} project - project.
  * @param {string} cardId - card id.
