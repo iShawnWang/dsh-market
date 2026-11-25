@@ -1445,8 +1445,12 @@ window.__ModuleLoader__.load({
      *
      * A timeline rather than a table: the entries are few and the order is the
      * point, and a table of one-line facts would be wider without being clearer.
+     *
+     * @param {object} props - component props.
+     * @param {Array} props.history - log entries.
+     * @param {Array} props.columns - the project's columns, to name a status.
      */
-    function History({ history }) {
+    function History({ history, columns }) {
       const entries = Array.isArray(history) ? history : [];
       if (entries.length === 0) return null;
       return h(
@@ -1461,7 +1465,7 @@ window.__ModuleLoader__.load({
               'li',
               { key: `${entry.at}-${index}`, className: 'dsb-history-item' },
               h('span', { className: 'dsb-history-when' }, formatWhen(entry.at)),
-              describeChange(entry),
+              describeChange(entry, columns),
             ),
           ),
         ),
@@ -1481,31 +1485,44 @@ window.__ModuleLoader__.load({
     /**
      * One log entry as a sentence: what changed, from what to what.
      * @param {object} entry - log entry.
+     * @param {Array} columns - the project's columns, to name a status.
      * @returns {Array} children.
      */
-    function describeChange(entry) {
+    function describeChange(entry, columns) {
       if (entry.field === 'created') return ['创建了卡片'];
       const label = FIELD_LABEL[entry.field] ?? entry.field;
       return [
         h('span', { className: 'dsb-history-field' }, label),
         ' ',
-        h('span', { className: 'dsb-history-value' }, displayValue(entry.field, entry.from)),
+        h('span', { className: 'dsb-history-value' }, displayValue(entry.field, entry.from, columns)),
         ' → ',
-        h('span', { className: 'dsb-history-value' }, displayValue(entry.field, entry.to)),
+        h('span', { className: 'dsb-history-value' }, displayValue(entry.field, entry.to, columns)),
       ];
     }
 
     /**
      * Render a logged value for a human. Empty values are a real state ("no due
      * date"), so they read as a word rather than as a blank.
+     *
+     * A status is stored as the column id, so it is resolved here, at read
+     * time: rename a column and every entry about it reads in the new name
+     * rather than in the name it happened to have that day. One vocabulary for
+     * the whole board beats a faithful record of names nobody uses anymore.
+     *
      * @param {string} field - field name.
      * @param {unknown} value - stored value.
+     * @param {Array} [columns] - the project's columns.
      * @returns {string} text.
      */
-    function displayValue(field, value) {
+    function displayValue(field, value, columns) {
       if (value === null || value === undefined || value === '') return '空';
       if (field === 'priority') {
         return PRIORITIES.find((item) => item.id === value)?.label ?? String(value);
+      }
+      if (field === 'columnId') {
+        const column = Array.isArray(columns) ? columns.find((item) => item.id === value) : null;
+        // The column can be gone: a card leaves it, then someone deletes it.
+        return column ? column.name : '已删除的列';
       }
       if (field === 'description') {
         const text = String(value).replace(/\s+/g, ' ').trim();
@@ -1672,7 +1689,7 @@ window.__ModuleLoader__.load({
             onChange: (event) => setDescription(event.target.value),
             onBlur: commitDescription,
           }),
-          h(History, { history: card.history }),
+          h(History, { history: card.history, columns: project.columns }),
         ),
         h(
           'div',
