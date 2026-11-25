@@ -16,6 +16,7 @@ window.__ModuleLoader__.load({
   factory(require) {
     const React = require('react');
     const h = React.createElement;
+    const { useEffect, useState } = React;
 
     /** Must match the `main` slot key and the sidebar row id. */
     const PANEL_ID = 'dsh-plugin-fe-homepage';
@@ -128,7 +129,6 @@ window.__ModuleLoader__.load({
         name: '新小程序',
         platform: 'yeqiao-mobile · master-mp',
         repo: 'http://172.17.188.125:9001/yeqiao/app/yeqiao-mobile/-/tree/master-mp',
-        release: 'npm run build:mp:prod',
       },
       {
         id: 'mp-old',
@@ -193,14 +193,14 @@ window.__ModuleLoader__.load({
 
     const ENTRIES = [
       { id: 'gitlab', name: 'GitLab', url: 'http://172.17.188.125:9001/', shot: 'gitlab.webp' },
-      { id: 'mail', name: '邮箱', url: 'http://mail.yeqiao.cn/', shot: 'mail.webp' },
-      { id: 'oa', name: 'OA', url: 'http://yqoa.yeqiao.cn/', shot: 'oa.webp' },
       {
         id: 'zentao',
         name: '禅道',
         url: 'http://10.10.254.52/zentao/my/',
         shot: 'zentao.webp',
       },
+      { id: 'oa', name: 'OA', url: 'http://yqoa.yeqiao.cn/', shot: 'oa.webp' },
+      { id: 'mail', name: '邮箱', url: 'http://mail.yeqiao.cn/', shot: 'mail.webp' },
     ];
 
     const APIS = [
@@ -216,11 +216,20 @@ window.__ModuleLoader__.load({
       { phone: '13164720800', who: '铭' },
     ];
 
-    const MP_STEPS = [
-      'pnpm i',
-      'pnpm run build:mp:prod',
-      '导入 dist/build/mp-weixin',
-      '登录 mp.weixin.qq.com，选对应版本提交审核',
+    /** 小程序生产发布, in the document's order; a step carries the screenshot below it. */
+    const MP_RELEASE = [
+      { text: 'pnpm i', code: true },
+      {
+        text: 'pnpm run build:mp:prod',
+        code: true,
+        shot: { file: 'miniapp-build.webp', alt: '构建输出' },
+      },
+      { text: '登录账号 chengliang@yeqiao.cn' },
+      { text: '登录 mp.weixin.qq.com，选择对应版本提交审核' },
+      {
+        text: '审核页面填入测试账号 13998828370，其余不动',
+        shot: { file: 'miniapp-mp.webp', alt: '微信公众平台版本管理' },
+      },
     ];
 
     const NODE14_STEPS = [
@@ -390,29 +399,30 @@ a.feh-name:hover { color: var(--dsw-alias-link); text-decoration: underline; }
   background: color-mix(in srgb, var(--dsw-alias-state-success-primary) 16%, transparent);
   border-color: color-mix(in srgb, var(--dsw-alias-state-success-primary) 55%, transparent);
 }
-.feh-release {
+/* 仓库/分支: its own row, one per repository, clipped with an ellipsis. */
+.feh-repos { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.feh-repo { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
+.feh-repo-link {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 11px;
-  color: var(--dsw-alias-label-tertiary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.feh-repos { display: flex; flex-direction: column; gap: 2px; }
-.feh-repos a {
-  font-size: 11.5px;
   color: var(--dsw-alias-label-tertiary);
   text-decoration: none;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.feh-repos a:hover { color: var(--dsw-alias-link); text-decoration: underline; }
+.feh-repo-link:hover { color: var(--dsw-alias-link); text-decoration: underline; }
+.feh-repo-note {
+  flex: 0 0 auto;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 10.5px;
+  opacity: 0.85;
+}
 
 /* ---- entry cards ---- */
 .feh-entries {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(228px, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
 }
 .feh-entry {
@@ -486,33 +496,54 @@ a.feh-api:hover .feh-api-url { color: var(--dsw-alias-link); text-decoration: un
 /* ---- mini program ---- */
 .feh-mp {
   display: grid;
-  grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
-  gap: 12px;
+  grid-template-columns: minmax(200px, 260px) minmax(0, 1fr);
+  gap: 10px;
   align-items: start;
 }
 .feh-mp-qr {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 9px;
   padding: 12px;
   border-radius: 10px;
   border: 1px solid var(--dsw-alias-border-l2);
   background: var(--dsw-alias-bg-layer-1);
+}
+.feh-mp-qr button {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: zoom-in;
+  border-radius: 7px;
+  overflow: hidden;
+  line-height: 0;
 }
 .feh-mp-qr img {
   width: 100%;
-  border-radius: 7px;
   display: block;
+  border-radius: 7px;
   border: 1px solid var(--dsw-alias-border-l1);
+  background: #fff;
 }
+.feh-mp-qr button:hover img { border-color: var(--dsw-alias-border-l3); }
 .feh-mp-steps {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 12px;
+  gap: 10px;
+  padding: 13px 14px 14px;
   border-radius: 10px;
   border: 1px solid var(--dsw-alias-border-l2);
   background: var(--dsw-alias-bg-layer-1);
+}
+.feh-mp-step { display: flex; flex-direction: column; gap: 7px; }
+.feh-mp-shot {
+  display: block;
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  cursor: zoom-in;
 }
 .feh-steps { display: flex; flex-direction: column; gap: 5px; margin: 0; padding: 0; list-style: none; }
 .feh-step { display: flex; gap: 8px; align-items: baseline; font-size: 12px; line-height: 17px; }
@@ -530,13 +561,6 @@ a.feh-api:hover .feh-api-url { color: var(--dsw-alias-link); text-decoration: un
   background: var(--dsw-alias-bg-layer-2);
   color: var(--dsw-alias-label-primary);
 }
-.feh-mp-shot {
-  display: block;
-  width: 100%;
-  margin-top: 2px;
-  border-radius: 8px;
-  border: 1px solid var(--dsw-alias-border-l2);
-}
 .feh-cap { color: var(--dsw-alias-label-tertiary); font-size: 11px; }
 .feh-link {
   color: var(--dsw-alias-link);
@@ -544,6 +568,48 @@ a.feh-api:hover .feh-api-url { color: var(--dsw-alias-link); text-decoration: un
   font-size: 12px;
 }
 .feh-link:hover { text-decoration: underline; }
+
+/* ---- lightbox ---- */
+.feh-zoom {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  background: color-mix(in srgb, #000 72%, transparent);
+  cursor: zoom-out;
+  animation: feh-fade 120ms ease;
+}
+.feh-zoom img {
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 10px;
+  box-shadow: 0 18px 60px rgb(0 0 0 / 45%);
+  background: #fff;
+  cursor: default;
+}
+/* A QR is modules, not pixels: nearest-neighbour keeps the squares square. */
+.feh-zoom img.feh-zoom-pixel { image-rendering: pixelated; }
+.feh-zoom-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 8px;
+  background: var(--dsw-alias-bg-layer-2);
+  color: var(--dsw-alias-label-secondary);
+  cursor: pointer;
+}
+.feh-zoom-close:hover { color: var(--dsw-alias-label-primary); }
+@keyframes feh-fade { from { opacity: 0 } to { opacity: 1 } }
 
 /* ---- misc ---- */
 .feh-cols {
@@ -583,6 +649,9 @@ a.feh-api:hover .feh-api-url { color: var(--dsw-alias-link); text-decoration: un
   color: var(--dsw-alias-label-primary);
   white-space: pre;
   overflow-x: auto;
+}
+@media (max-width: 900px) {
+  .feh-entries { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 720px) {
   .feh-scroll { padding: 16px 14px 40px; }
@@ -626,27 +695,41 @@ a.feh-api:hover .feh-api-url { color: var(--dsw-alias-link); text-decoration: un
         h(
           'div',
           { className: 'feh-card-top' },
-          repos.length === 1
-            ? h(
-                'a',
-                {
-                  className: 'feh-name',
-                  href: repos[0],
-                  target: '_blank',
-                  rel: 'noreferrer noopener',
-                  title: repos[0],
-                },
-                project.name,
-              )
-            : h('span', { className: 'feh-name', title: project.name }, project.name),
+          h('span', { className: 'feh-name', title: project.name }, project.name),
           project.deprecated ? h('span', { className: 'feh-tag' }, '已废弃') : null,
-          project.repoNote ? h('span', { className: 'feh-tag' }, project.repoNote) : null,
           project.note
             ? h('button', { className: 'feh-note-btn', type: 'button', title: project.note }, NOTE_GLYPH)
             : null,
         ),
 
         h('div', { className: 'feh-sub', title: project.platform }, project.platform),
+
+        repos.length
+          ? h(
+              'div',
+              { className: 'feh-repos' },
+              repos.map((repo, index) =>
+                h(
+                  'div',
+                  { key: repo, className: 'feh-repo' },
+                  h(
+                    'a',
+                    {
+                      className: 'feh-repo-link',
+                      href: repo,
+                      target: '_blank',
+                      rel: 'noreferrer noopener',
+                      title: repo,
+                    },
+                    repo.replace(/^https?:\/\//, ''),
+                  ),
+                  index === 0 && project.repoNote
+                    ? h('span', { className: 'feh-repo-note' }, project.repoNote)
+                    : null,
+                ),
+              ),
+            )
+          : null,
 
         envs.length
           ? h(
@@ -664,22 +747,6 @@ a.feh-api:hover .feh-api-url { color: var(--dsw-alias-link); text-decoration: un
                     title: bare(project.envs[env.id]),
                   },
                   env.label,
-                ),
-              ),
-            )
-          : null,
-
-        project.release ? h('div', { className: 'feh-release' }, project.release) : null,
-
-        repos.length > 1
-          ? h(
-              'div',
-              { className: 'feh-repos' },
-              repos.map((repo) =>
-                h(
-                  'a',
-                  { key: repo, href: repo, target: '_blank', rel: 'noreferrer noopener', title: repo },
-                  repo.replace(/^https?:\/\//, ''),
                 ),
               ),
             )
@@ -706,6 +773,58 @@ a.feh-api:hover .feh-api-url { color: var(--dsw-alias-link); text-decoration: un
       );
     }
 
+    /**
+     * Full-screen preview for the screenshots. A dialog, not a new tab: the
+     * point of 点击放大 is reading the QR code without leaving the page.
+     */
+    function Zoom({ shot, onClose }) {
+      useEffect(() => {
+        if (!shot) return undefined;
+        const onKey = (event) => {
+          if (event.key === 'Escape') onClose();
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+      }, [shot, onClose]);
+
+      if (!shot) return null;
+      return h(
+        'div',
+        {
+          className: 'feh-zoom',
+          role: 'dialog',
+          'aria-modal': 'true',
+          'aria-label': shot.alt,
+          onClick: onClose,
+        },
+        h('img', {
+          className: shot.pixelated ? 'feh-zoom-pixel' : undefined,
+          src: asset(shot.file),
+          alt: shot.alt,
+          onClick: (e) => e.stopPropagation(),
+        }),
+        h(
+          'button',
+          {
+            className: 'feh-zoom-close',
+            type: 'button',
+            'aria-label': '关闭',
+            onClick: onClose,
+          },
+          h(
+            'svg',
+            { width: 14, height: 14, viewBox: '0 0 24 24', fill: 'none', 'aria-hidden': true },
+            h('path', {
+              d: 'M6 6l12 12M18 6L6 18',
+              stroke: 'currentColor',
+              strokeWidth: 1.8,
+              strokeLinecap: 'round',
+            }),
+          ),
+        ),
+      );
+    }
+
     function Steps({ items, mono }) {
       return h(
         'ol',
@@ -722,6 +841,8 @@ a.feh-api:hover .feh-api-url { color: var(--dsw-alias-link); text-decoration: un
     }
 
     function Page() {
+      const [zoom, setZoom] = useState(null);
+
       return h(
         'div',
         { className: 'feh-root' },
@@ -732,11 +853,7 @@ a.feh-api:hover .feh-api-url { color: var(--dsw-alias-link); text-decoration: un
             'div',
             { className: 'feh-inner' },
 
-            h(
-              'div',
-              { className: 'feh-head' },
-              h('h1', { className: 'feh-title' }, '前端主页'),
-            ),
+            h('div', { className: 'feh-head' }, h('h1', { className: 'feh-title' }, '前端主页')),
 
             h(
               'section',
@@ -800,39 +917,62 @@ a.feh-api:hover .feh-api-url { color: var(--dsw-alias-link); text-decoration: un
                 { className: 'feh-mp' },
 
                 h(
-                  'a',
-                  {
-                    className: 'feh-mp-qr',
-                    href: asset('miniapp-qr.webp'),
-                    target: '_blank',
-                    rel: 'noreferrer noopener',
-                  },
-                  h('img', { src: asset('miniapp-qr.webp'), alt: '小程序体验版二维码' }),
-                  h('span', { className: 'feh-cap' }, '体验版二维码 · pages/index/index'),
-                  h('img', {
-                    className: 'feh-mp-shot',
-                    src: asset('miniapp-mp.webp'),
-                    alt: '微信公众平台版本管理',
-                    loading: 'lazy',
-                  }),
+                  'div',
+                  { className: 'feh-mp-qr' },
+                  h(
+                    'button',
+                    {
+                      type: 'button',
+                      onClick: () =>
+                        setZoom({
+                          file: 'miniapp-qr-code.png',
+                          alt: '小程序体验版二维码',
+                          pixelated: true,
+                        }),
+                      'aria-label': '放大体验版二维码',
+                    },
+                    h('img', {
+                      src: asset('miniapp-qr-code.png'),
+                      alt: '小程序体验版二维码',
+                    }),
+                  ),
+                  h('span', { className: 'feh-cap' }, '乔乔车体验版 · pages/index/index'),
                 ),
 
                 h(
                   'div',
                   { className: 'feh-mp-steps' },
-                  h(Steps, { items: MP_STEPS }),
+                  h(
+                    'ol',
+                    { className: 'feh-steps' },
+                    MP_RELEASE.map((step, index) =>
+                      h(
+                        'li',
+                        { key: step.text, className: 'feh-mp-step' },
+                        h(
+                          'span',
+                          { className: 'feh-step' },
+                          h('span', { className: 'feh-step-n' }, index + 1),
+                          step.code ? h('code', null, step.text) : h('span', null, step.text),
+                        ),
+                        step.shot
+                          ? h('img', {
+                              className: 'feh-mp-shot',
+                              src: asset(step.shot.file),
+                              alt: step.shot.alt,
+                              loading: 'lazy',
+                              onClick: () => setZoom(step.shot),
+                            })
+                          : null,
+                      ),
+                    ),
+                  ),
                   h('a', {
                     className: 'feh-link',
                     href: 'http://192.168.91.130:3000/help',
                     target: '_blank',
                     rel: 'noreferrer noopener',
                   }, '测试环境 CI'),
-                  h('img', {
-                    className: 'feh-mp-shot',
-                    src: asset('miniapp-build.webp'),
-                    alt: '构建输出',
-                    loading: 'lazy',
-                  }),
                 ),
               ),
             ),
@@ -876,6 +1016,8 @@ a.feh-api:hover .feh-api-url { color: var(--dsw-alias-link); text-decoration: un
             ),
           ),
         ),
+
+        h(Zoom, { shot: zoom, onClose: () => setZoom(null) }),
       );
     }
 
