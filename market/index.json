@@ -112,8 +112,8 @@
     {
       "name": "dsh-plugin-yq-release",
       "title": {
-        "en": "YQ Frontend Release",
-        "zh-cn": "YQ-前端发布"
+        "en": "Frontend Release",
+        "zh-cn": "前端发布"
       },
       "description": {
         "en": "Release a branch to a test environment in one sentence: merge in GitLab, deploy the Spug frontend or trigger a miniprogram build, and record every release. Conflicts always stop the run.",
