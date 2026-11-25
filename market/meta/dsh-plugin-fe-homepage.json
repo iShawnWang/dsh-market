@@ -1,0 +1,30 @@
+{
+  "title": {
+    "en": "Frontend Homepage",
+    "zh-cn": "前端主页"
+  },
+  "description": {
+    "en": "One sidebar tab for every frontend project: dev, test, staging and production URLs side by side, plus the everyday entry points, API environments and the mini-program release steps.",
+    "zh-cn": "一个侧栏标签看全前端项目：开发、测试、预生产、生产地址并排，加上常用入口、接口环境和小程序发版步骤。"
+  },
+  "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+CiAgPHBhdGggZD0iTTQuMiAxMC4yIDEyIDMuNmw3LjggNi42VjIwYS44LjggMCAwIDEtLjguOGgtNC40di01LjZIOS40VjIwLjhINWEuOC44IDAgMCAxLS44LS44di05LjhaIiBzdHJva2U9IiM3QzhDRjgiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjwvc3ZnPgo=",
+  "category": "tools",
+  "labels": [
+    "internal"
+  ],
+  "keywords": [
+    "homepage",
+    "frontend",
+    "env",
+    "url",
+    "miniapp",
+    "前端",
+    "地址",
+    "环境",
+    "小程序"
+  ],
+  "repository": {
+    "url": "https://github.com/iShawnWang/dsh-market",
+    "directory": "plugins/dsh-plugin-fe-homepage"
+  }
+}

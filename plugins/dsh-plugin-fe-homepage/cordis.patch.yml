@@ -1,0 +1,9 @@
+# Bundle patch layer of dsh-plugin-fe-homepage.
+#
+# One loader entry. The page is entirely browser-side: dsh-client-modules picks
+# up the `dsh.client` declaration plus `exports["./client"]`, and the bundled
+# screenshots are served from the package's `./assets/*` export at
+# /plugins/dsh-plugin-fe-homepage/assets/<file>.
+- insert:
+    - id: fe-homepage
+      name: dsh-plugin-fe-homepage
