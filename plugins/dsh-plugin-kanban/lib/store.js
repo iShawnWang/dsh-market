@@ -21,11 +21,18 @@ import { randomUUID } from 'node:crypto';
 /** Default board file location. */
 export const DEFAULT_DATA_FILE = join(homedir(), '.dsh', 'kanban', 'kanban.json');
 
-/** Columns a brand-new board starts with. */
+/**
+ * Columns a brand-new board starts with.
+ *
+ * The first and the last one are built in: every card is somewhere between
+ * "not started" and "done", so a board without those two ends has nowhere to
+ * put a card that has not begun or has finished. They can be renamed to
+ * whatever the team calls them, but not removed.
+ */
 const DEFAULT_COLUMNS = [
-  { name: '待办', isFinal: false },
-  { name: '进行中', isFinal: false },
-  { name: '已完成', isFinal: true },
+  { name: '待办', isFinal: false, builtIn: true },
+  { name: '进行中', isFinal: false, builtIn: false },
+  { name: '已完成', isFinal: true, builtIn: true },
 ];
 
 /** Priorities a card may carry; null means none. */
@@ -105,6 +112,7 @@ export function emptyDocument() {
     id: randomUUID(),
     name: column.name,
     isFinal: column.isFinal,
+    builtIn: column.builtIn,
   }));
   return {
     version: 1,
@@ -137,12 +145,22 @@ export function normalize(value) {
       const columns = Array.isArray(project.columns) && project.columns.length > 0
         ? project.columns
             .filter((column) => column && typeof column === 'object')
-            .map((column) => ({
+            .map((column, index) => ({
               id: String(column.id ?? randomUUID()),
               name: String(column.name ?? '未命名'),
               isFinal: column.isFinal === true,
+              // Boards written before columns could be built in get the two
+              // ends marked on read: the first column is where a card starts,
+              // the final one is where it lands. Every board has both, so the
+              // migration needs no decision from the user. Once a column
+              // carries the flag it is read from the document, so promoting
+              // another column to final does not quietly make it permanent.
+              builtIn:
+                typeof column.builtIn === 'boolean'
+                  ? column.builtIn
+                  : index === 0 || column.isFinal === true,
             }))
-        : [{ id: randomUUID(), name: '待办', isFinal: false }];
+        : [{ id: randomUUID(), name: '待办', isFinal: false, builtIn: true }];
       // A project with no columns cannot hold a card, so the repair above is
       // what lets a damaged document still open instead of showing an empty lane
       // area with nowhere to drop anything.

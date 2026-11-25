@@ -52,7 +52,18 @@ window.__ModuleLoader__.load({
   overflow: hidden;
   background: var(--dsw-alias-bg-base);
   color: var(--dsw-alias-label-primary);
-  font: 13px/18px system-ui, -apple-system, "Segoe UI", sans-serif;
+  font: 13px/18px var(--dsw-font-family);
+  /* Three surfaces, one step apart: the page, the trough a column sits in, and
+     the card that floats in the trough. In light mode both steps are mixed from
+     the page colour, which keeps the trough neutral instead of blue; in dark
+     mode they are two rungs of the neutral scale, because mixing towards white
+     there would lift the trough above the page instead of sinking it. */
+  --dsb-surface-trough: color-mix(in srgb, var(--dsw-alias-bg-base) 94%, var(--dsw-alias-label-primary) 6%);
+  --dsb-surface-card: var(--dsw-static-neutral-bluish-00);
+}
+body[data-ds-dark-theme] .dsb-root {
+  --dsb-surface-trough: var(--dsw-static-neutral-bluish-1000);
+  --dsb-surface-card: var(--dsw-static-neutral-bluish-900);
 }
 
 .dsb-head {
@@ -76,7 +87,7 @@ window.__ModuleLoader__.load({
   border-radius: 8px;
   background: transparent;
   color: var(--dsw-alias-label-primary);
-  font: 500 15px/22px system-ui, -apple-system, "Segoe UI", sans-serif;
+  font: 500 15px/22px var(--dsw-font-family);
   cursor: pointer;
 }
 .dsb-project:hover { background: var(--dsw-alias-interactive-bg-hover); }
@@ -84,7 +95,7 @@ window.__ModuleLoader__.load({
 
 .dsb-count {
   color: var(--dsw-alias-label-tertiary);
-  font: 400 12px/18px system-ui, -apple-system, "Segoe UI", sans-serif;
+  font: 400 12px/18px var(--dsw-font-family);
   font-variant-numeric: tabular-nums;
 }
 
@@ -110,7 +121,10 @@ window.__ModuleLoader__.load({
   max-width: 384px;
   min-height: 0;
   border-radius: 12px;
-  background: color-mix(in srgb, var(--dsw-alias-label-primary) 4%, transparent);
+  /* The column is a trough the cards sit in: it reads as one step below the
+     page, and the card is one step above it. Both steps are set once on
+     .dsb-root, per theme. */
+  background: var(--dsb-surface-trough);
   transition: box-shadow 120ms ease;
 }
 .dsb-lane[data-over="true"] {
@@ -122,20 +136,28 @@ window.__ModuleLoader__.load({
   align-items: center;
   gap: 6px;
   flex: 0 0 auto;
-  height: 32px;
+  height: 40px;
   padding: 4px 6px 0 12px;
 }
+.dsb-lane-mark {
+  display: inline-flex;
+  flex: 0 0 auto;
+  color: var(--dsw-alias-label-tertiary);
+}
+/* The done column's mark carries the same green the rest of the product uses
+   for finished work, so the column is recognisable without reading its name. */
+.dsb-lane[data-final="true"] .dsb-lane-mark { color: var(--dsw-alias-state-success-primary); }
 .dsb-lane-name {
   flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font: 500 13px/18px system-ui, -apple-system, "Segoe UI", sans-serif;
+  font: 500 14px/20px var(--dsw-font-family);
 }
 .dsb-lane-count {
   color: var(--dsw-alias-label-tertiary);
-  font: 400 12px/18px system-ui, -apple-system, "Segoe UI", sans-serif;
+  font: 400 12px/18px var(--dsw-font-family);
   font-variant-numeric: tabular-nums;
 }
 
@@ -164,19 +186,18 @@ window.__ModuleLoader__.load({
   gap: 6px;
   padding: 10px 12px 11px;
   border-radius: 10px;
-  border: 1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 9%, transparent);
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 8%, transparent);
   /* The priority edge is reserved on every card, even the ones without a
      priority, so titles in a column start on one line instead of stepping in
      and out by the width of the accent. */
   border-left-width: 3px;
-  border-left-color: color-mix(in srgb, var(--dsw-alias-label-primary) 9%, transparent);
-  background: var(--dsw-alias-bg-layer-2);
-  box-shadow: 0 1px 2px color-mix(in srgb, #000 4%, transparent);
-  transition: border-color 120ms ease, box-shadow 120ms ease;
+  border-left-color: color-mix(in srgb, var(--dsw-alias-label-primary) 8%, transparent);
+  background: var(--dsb-surface-card);
+  transition: border-color 120ms ease, background 120ms ease;
   cursor: grab;
 }
 .dsb-card:hover {
-  border-color: color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);
+  border-color: color-mix(in srgb, var(--dsw-alias-label-primary) 18%, transparent);
 }
 /* Priority rides on the left edge rather than a dot: a column of cards is
    scanned top to bottom, and an edge is what the eye already follows. The
@@ -196,10 +217,24 @@ window.__ModuleLoader__.load({
   outline-offset: 1px;
 }
 .dsb-card[data-dragging="true"] { opacity: 0.45; }
+/* Finished cards sink back into the trough: no border, no lift, the surface
+   only a hair above the column. The card is still there and still openable, it
+   just stops competing for attention with the work that is not done. */
 .dsb-card[data-done="true"] {
-  border-color: color-mix(in srgb, var(--dsw-alias-label-primary) 6%, transparent);
-  background: color-mix(in srgb, var(--dsw-alias-bg-layer-2) 60%, transparent);
-  box-shadow: none;
+  /* Longhands: border-color would wipe the priority edge, which this card
+     keeps (muted, see below) even after it is finished. */
+  border-top-color: transparent;
+  border-right-color: transparent;
+  border-bottom-color: transparent;
+  background: color-mix(in srgb, var(--dsb-surface-card) 45%, transparent);
+}
+.dsb-card[data-done="true"]:hover {
+  /* Longhands only: border-color is a shorthand and would repaint the priority
+     edge grey, the same trap the hover rule above documents. */
+  border-top-color: color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent);
+  border-right-color: color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent);
+  border-bottom-color: color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent);
+  background: var(--dsb-surface-card);
 }
 /* Finished work keeps its accent but muted: the priority still belongs to the
    card, it just no longer asks for anything. */
@@ -228,7 +263,7 @@ window.__ModuleLoader__.load({
 .dsb-card-priority {
   flex: 0 0 auto;
   color: var(--dsb-priority-color, var(--dsw-alias-label-secondary));
-  font: 500 11px/14px system-ui, -apple-system, "Segoe UI", sans-serif;
+  font: 500 11px/14px var(--dsw-font-family);
 }
 .dsb-card-title {
   display: -webkit-box;
@@ -237,9 +272,9 @@ window.__ModuleLoader__.load({
   overflow: hidden;
   overflow-wrap: anywhere;
   color: var(--dsw-alias-label-primary);
-  font: 500 13px/18px system-ui, -apple-system, "Segoe UI", sans-serif;
+  font: 500 13px/18px var(--dsw-font-family);
 }
-.dsb-card[data-done="true"] .dsb-card-title { color: var(--dsw-alias-label-secondary); }
+.dsb-card[data-done="true"] .dsb-card-title { color: var(--dsw-alias-label-tertiary); }
 
 .dsb-card-foot {
   display: flex;
@@ -258,7 +293,7 @@ window.__ModuleLoader__.load({
   border-radius: 6px;
   border: 1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 9%, transparent);
   color: var(--dsw-alias-label-secondary);
-  font: 400 11px/18px system-ui, -apple-system, "Segoe UI", sans-serif;
+  font: 400 11px/18px var(--dsw-font-family);
   white-space: nowrap;
 }
 .dsb-chip[data-overdue="true"] { color: var(--dsw-alias-state-error-primary); }
@@ -281,7 +316,7 @@ window.__ModuleLoader__.load({
   border-radius: 8px;
   background: transparent;
   color: var(--dsw-alias-label-tertiary);
-  font: 400 12px/18px system-ui, -apple-system, "Segoe UI", sans-serif;
+  font: 400 12px/18px var(--dsw-font-family);
   cursor: pointer;
   text-align: left;
 }
@@ -321,7 +356,7 @@ window.__ModuleLoader__.load({
   border: 1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent);
   background: var(--dsw-alias-bg-layer-2);
   color: var(--dsw-alias-label-primary);
-  font: 500 12px/18px system-ui, -apple-system, "Segoe UI", sans-serif;
+  font: 500 12px/18px var(--dsw-font-family);
   cursor: pointer;
 }
 .dsb-btn:hover { background: var(--dsw-alias-interactive-bg-hover); }
@@ -358,23 +393,21 @@ window.__ModuleLoader__.load({
   border-radius: 6px;
   background: transparent;
   color: var(--dsw-alias-label-primary);
-  font: 400 13px/18px system-ui, -apple-system, "Segoe UI", sans-serif;
+  font: 400 13px/18px var(--dsw-font-family);
   cursor: pointer;
   text-align: left;
 }
 .dsb-menu-item:hover { background: var(--dsw-alias-interactive-bg-hover); }
 .dsb-menu-item[data-active="true"] { font-weight: 500; }
 .dsb-menu-item[data-tone="danger"] { color: var(--dsw-alias-state-error-primary); }
-.dsb-menu-item:disabled {
-  color: var(--dsw-alias-label-tertiary);
-  cursor: not-allowed;
-  background: transparent;
-}
-.dsb-menu-item-meta {
-  margin-left: auto;
-  color: var(--dsw-alias-label-tertiary);
-  font: 400 11px/18px system-ui, -apple-system, "Segoe UI", sans-serif;
-  font-variant-numeric: tabular-nums;
+.dsb-menu-notice {
+  margin: 2px 6px 4px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border-left: 2px solid color-mix(in srgb, var(--dsw-alias-state-warn-primary) 70%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 7%, transparent);
+  color: var(--dsw-alias-label-secondary);
+  font: 400 12px/17px var(--dsw-font-family);
 }
 .dsb-menu-sep {
   height: 1px;
@@ -389,7 +422,7 @@ window.__ModuleLoader__.load({
 }
 .dsb-menu-confirm-text {
   color: var(--dsw-alias-label-secondary);
-  font: 400 12px/18px system-ui, -apple-system, "Segoe UI", sans-serif;
+  font: 400 12px/18px var(--dsw-font-family);
 }
 .dsb-menu-confirm-actions {
   display: flex;
@@ -500,7 +533,7 @@ window.__ModuleLoader__.load({
   border-radius: 6px;
   background: transparent;
   color: var(--dsw-alias-label-primary);
-  font: 500 16px/24px system-ui, -apple-system, "Segoe UI", sans-serif;
+  font: 500 16px/24px var(--dsw-font-family);
   resize: none;
   outline: none;
 }
@@ -514,7 +547,7 @@ window.__ModuleLoader__.load({
 }
 .dsb-field-label {
   color: var(--dsw-alias-label-tertiary);
-  font: 400 12px/20px system-ui, -apple-system, "Segoe UI", sans-serif;
+  font: 400 12px/20px var(--dsw-font-family);
 }
 .dsb-control {
   box-sizing: border-box;
@@ -526,7 +559,7 @@ window.__ModuleLoader__.load({
   border-left-width: 3px;
   background: var(--dsw-alias-bg-layer-2);
   color: var(--dsw-alias-label-primary);
-  font: 400 13px/18px system-ui, -apple-system, "Segoe UI", sans-serif;
+  font: 400 13px/18px var(--dsw-font-family);
   outline: none;
 }
 .dsb-control:focus-visible { border-color: var(--dsw-alias-brand-primary); }
@@ -552,7 +585,7 @@ window.__ModuleLoader__.load({
   border: 1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 10%, transparent);
   background: var(--dsw-alias-bg-layer-2);
   color: var(--dsw-alias-label-primary);
-  font: 400 13px/20px system-ui, -apple-system, "Segoe UI", sans-serif;
+  font: 400 13px/20px var(--dsw-font-family);
   resize: vertical;
   outline: none;
 }
@@ -561,7 +594,7 @@ window.__ModuleLoader__.load({
 
 .dsb-warn {
   color: var(--dsw-alias-label-secondary);
-  font: 400 12px/18px system-ui, -apple-system, "Segoe UI", sans-serif;
+  font: 400 12px/18px var(--dsw-font-family);
 }
 
 .dsb-history {
@@ -571,7 +604,7 @@ window.__ModuleLoader__.load({
 }
 .dsb-history-title {
   color: var(--dsw-alias-label-tertiary);
-  font: 500 11px/16px system-ui, -apple-system, "Segoe UI", sans-serif;
+  font: 500 11px/16px var(--dsw-font-family);
   letter-spacing: 0.02em;
 }
 .dsb-history-list {
@@ -584,7 +617,7 @@ window.__ModuleLoader__.load({
   position: relative;
   padding: 0 0 8px;
   color: var(--dsw-alias-label-secondary);
-  font: 400 12px/18px system-ui, -apple-system, "Segoe UI", sans-serif;
+  font: 400 12px/18px var(--dsw-font-family);
   overflow-wrap: anywhere;
 }
 .dsb-history-item:last-child { padding-bottom: 0; }
@@ -612,7 +645,7 @@ window.__ModuleLoader__.load({
   justify-content: center;
   flex: 1 1 auto;
   color: var(--dsw-alias-label-tertiary);
-  font: 400 13px/18px system-ui, -apple-system, "Segoe UI", sans-serif;
+  font: 400 13px/18px var(--dsw-font-family);
 }
 `;
 
@@ -656,6 +689,32 @@ window.__ModuleLoader__.load({
     const MoreIcon = (p) => h(Icon, { ...p, d: 'M6 12h.01M12 12h.01M18 12h.01', stroke: 2.2 });
     const CloseIcon = (p) => h(Icon, { ...p, d: 'M6 6l12 12M18 6L6 18' });
     const ChevronIcon = (p) => h(Icon, { ...p, d: 'M6 9l6 6 6-6' });
+
+    /**
+     * The column's state as a mark: an open ring for work in flight, a filled
+     * check for the column where work ends. It sits before the name so the
+     * column's role is legible before the name is read, and it survives a
+     * rename to anything at all.
+     */
+    function StatusIcon({ done, size = 14 }) {
+      return h(
+        'svg',
+        {
+          width: size,
+          height: size,
+          viewBox: '0 0 24 24',
+          fill: 'none',
+          stroke: 'currentColor',
+          strokeWidth: 1.7,
+          strokeLinecap: 'round',
+          strokeLinejoin: 'round',
+          'aria-hidden': true,
+          style: { display: 'block', flex: '0 0 auto' },
+        },
+        h('circle', { cx: 12, cy: 12, r: 8.5 }),
+        done ? h('path', { d: 'M8.4 12.3l2.6 2.6 4.6-5.2' }) : null,
+      );
+    }
 
     // --------------------------------------------------------------- utilities
 
@@ -1038,8 +1097,17 @@ window.__ModuleLoader__.load({
             await mutate('/column/update', { projectId: project.id, columnId: menu.columnId, name });
           },
           onDeleteColumn: async () => {
+            const payload = await mutate('/column/delete', {
+              projectId: project.id,
+              columnId: menu.columnId,
+            });
+            // The host refuses a column that is built in or still holds cards.
+            // Its answer is the truth (the board may have changed in another
+            // window since the menu opened), so keep the menu open and say why
+            // instead of closing on an error the user never sees.
+            if (!payload.ok) return payload.error ?? '删除失败';
             setMenu(null);
-            await mutate('/column/delete', { projectId: project.id, columnId: menu.columnId });
+            return null;
           },
         }),
 
@@ -1095,7 +1163,7 @@ window.__ModuleLoader__.load({
                 border: '1px solid var(--dsw-alias-border-l2)',
                 background: 'var(--dsw-alias-bg-layer-3)',
                 color: 'var(--dsw-alias-label-secondary)',
-                font: '400 12px/18px system-ui, -apple-system, "Segoe UI", sans-serif',
+                font: '400 12px/18px var(--dsw-font-family)',
               },
             },
             error,
@@ -1148,6 +1216,7 @@ window.__ModuleLoader__.load({
         {
           className: 'dsb-lane',
           'data-over': over && draggingId ? 'true' : 'false',
+          'data-final': column.isFinal ? 'true' : 'false',
           'aria-label': column.name,
           onDragOver: (event) => {
             setOver(true);
@@ -1165,6 +1234,7 @@ window.__ModuleLoader__.load({
         h(
           'div',
           { className: 'dsb-lane-head' },
+          h('span', { className: 'dsb-lane-mark' }, h(StatusIcon, { done: column.isFinal, size: 14 })),
           h('span', { className: 'dsb-lane-name' }, column.name),
           h('span', { className: 'dsb-lane-count' }, String(cards.length)),
           h(
@@ -1263,6 +1333,8 @@ window.__ModuleLoader__.load({
       const [renaming, setRenaming] = useState(false);
       /** Which delete is waiting for its second click. */
       const [confirming, setConfirming] = useState(null);
+      /** Why the last delete attempt was refused, shown where the user clicked. */
+      const [notice, setNotice] = useState(null);
 
       useEffect(() => {
         if (!renaming) return;
@@ -1343,7 +1415,35 @@ window.__ModuleLoader__.load({
 
       const column = project.columns.find((item) => item.id === menu.columnId);
       const columnCards = column ? project.cards.filter((card) => card.columnId === column.id).length : 0;
-      const blocked = columnCards > 0;
+
+      // Deleting a column is only ever offered, never pre-refused: a greyed
+      // out row explains nothing, and the reason ("built in" / "still has
+      // cards") is more useful than a disabled state nobody can read.
+      const blockedReason = !column
+        ? '这一列已经不在了'
+        : column.builtIn
+          ? `「${column.name}」是系统内置列，不能删除，可以改名`
+          : columnCards > 0
+            ? `「${column.name}」里还有 ${columnCards} 张卡片，移走或删除后才能删`
+            : null;
+
+      // First click only ever asks. A refusal is spoken right there, where the
+      // user clicked, instead of a greyed-out row that explains nothing.
+      const requestDeleteColumn = () => {
+        if (blockedReason) {
+          setNotice(blockedReason);
+          return;
+        }
+        setConfirming('column');
+      };
+
+      const runDeleteColumn = async () => {
+        const failure = await props.onDeleteColumn();
+        if (failure) {
+          setConfirming(null);
+          setNotice(failure);
+        }
+      };
 
       return [
         close,
@@ -1382,7 +1482,7 @@ window.__ModuleLoader__.load({
                 '重命名',
               ),
           confirming === 'column'
-            ? confirmBlock(`删除列「${column?.name ?? ''}」？无法撤销。`, () => void props.onDeleteColumn())
+            ? confirmBlock(`删除列「${column?.name ?? ''}」？无法撤销。`, () => void runDeleteColumn())
             : h(
                 'button',
                 {
@@ -1390,16 +1490,14 @@ window.__ModuleLoader__.load({
                   className: 'dsb-menu-item',
                   role: 'menuitem',
                   'data-tone': 'danger',
-                  disabled: blocked,
-                  title: blocked ? `「${column?.name ?? ''}」里还有 ${columnCards} 张卡片，移走或删除后才能删除这一列` : undefined,
-                  onClick: () => {
-                    if (blocked) return;
-                    setConfirming('column');
-                  },
+                  'aria-describedby': notice ? 'dsb-menu-notice' : undefined,
+                  onClick: requestDeleteColumn,
                 },
                 '删除列',
-                blocked ? h('span', { className: 'dsb-menu-item-meta' }, `${columnCards} 张`) : null,
               ),
+          notice
+            ? h('div', { key: 'notice', id: 'dsb-menu-notice', className: 'dsb-menu-notice', role: 'status' }, notice)
+            : null,
         ),
       ];
     }

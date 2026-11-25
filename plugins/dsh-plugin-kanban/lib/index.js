@@ -148,6 +148,7 @@ function registerBridge(ctx, store) {
               id: randomUUID(),
               name: String(body.name ?? '新列').slice(0, 60),
               isFinal: body.isFinal === true,
+              builtIn: false,
             });
           }).then((document) => ({ ok: true, board: document })),
         ),
@@ -158,20 +159,29 @@ function registerBridge(ctx, store) {
             const column = project.columns.find((item) => item.id === body.columnId);
             if (!column) throw new Error('column not found');
             if (typeof body.name === 'string') column.name = body.name.slice(0, 60);
-            if ('isFinal' in body) column.isFinal = body.isFinal === true;
+            if ('isFinal' in body) {
+              // The built-in ends define where a card starts and finishes; if
+              // the done column could stop being final, finished work would
+              // render as in-progress. Renaming stays open.
+              if (column.builtIn) throw new Error(`「${column.name}」是系统内置列，只能改名，不能改变它的类型`);
+              column.isFinal = body.isFinal === true;
+            }
           }).then((document) => ({ ok: true, board: document })),
         ),
 
-        // A column can only be deleted once it is empty. Deleting a column used
-        // to take its cards with it, which is silent data loss the user never
-        // asked for; moving the cards out first is one drag, and refusing is
-        // recoverable. The panel disables the item and says how many are left.
+        // A column can only be deleted once it is empty, and the built-in ends
+        // can never be deleted at all. Deleting a column used to take its cards
+        // with it, which is silent data loss the user never asked for; moving
+        // the cards out first is one drag, and refusing is recoverable.
         makeRoute(ctx, '/column/delete', async (body) =>
           store.update((document) => {
             const project = requireProject(document, body.projectId);
-            if (project.columns.length <= 1) throw new Error('the last column cannot be deleted');
             const column = project.columns.find((item) => item.id === body.columnId);
             if (!column) throw new Error('column not found');
+            if (column.builtIn) {
+              throw new Error(`「${column.name}」是系统内置列，不能删除，可以改名`);
+            }
+            if (project.columns.length <= 1) throw new Error('the last column cannot be deleted');
             const count = project.cards.filter((card) => card.columnId === column.id).length;
             if (count > 0) {
               throw new Error(`「${column.name}」里还有 ${count} 张卡片，移走或删除后才能删除这一列`);
@@ -208,9 +218,9 @@ function registerBridge(ctx, store) {
               id: randomUUID(),
               name: String(body.name ?? '新项目').slice(0, 60),
               columns: [
-                { id: randomUUID(), name: '待办', isFinal: false },
-                { id: randomUUID(), name: '进行中', isFinal: false },
-                { id: randomUUID(), name: '已完成', isFinal: true },
+                { id: randomUUID(), name: '待办', isFinal: false, builtIn: true },
+                { id: randomUUID(), name: '进行中', isFinal: false, builtIn: false },
+                { id: randomUUID(), name: '已完成', isFinal: true, builtIn: true },
               ],
               cards: [],
               createdAt: now,
