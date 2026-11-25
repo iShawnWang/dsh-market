@@ -1,10 +1,10 @@
 # 禅道
 
-在 DSH 侧边栏里看「指派给我」的 Bug，点开就在面板内读详情，不跳出 DSH。
-
 ![指派给我的 Bug 列表](docs/panel-list.png)
 
 ![Bug 详情：重现步骤、动态、属性](docs/panel-detail.png)
+
+在 DSH 侧边栏里看「指派给我」的 Bug，点开就在面板内读详情，不跳出 DSH。
 
 ## 连接
 
