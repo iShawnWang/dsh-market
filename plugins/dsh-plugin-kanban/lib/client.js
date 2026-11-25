@@ -802,6 +802,30 @@ body[data-ds-dark-theme] .dsb-root {
     // -------------------------------------------------------------- components
 
     /**
+     * Which column edge the pointer is closest to, given the lane container and
+     * the pointer x. Measured against the container rather than a single lane,
+     * so the gaps between lanes and the empty strip to the right of the last
+     * one still resolve to a real drop target instead of swallowing the drop.
+     *
+     * @param {Element} container - the `.dsb-lanes` element.
+     * @param {number} clientX - pointer x.
+     * @returns {{columnId: string, edge: 'before'|'after'}|null} target.
+     */
+    function columnTargetAt(container, clientX) {
+      const lanes = [...container.querySelectorAll('[data-column-id]')];
+      if (lanes.length === 0) return null;
+      for (const lane of lanes) {
+        const box = lane.getBoundingClientRect();
+        // Past the halfway point of this lane, the pointer is pointing at the
+        // next slot; before it, at this one.
+        if (clientX < box.left + box.width / 2) {
+          return { columnId: lane.getAttribute('data-column-id'), edge: 'before' };
+        }
+      }
+      return { columnId: lanes[lanes.length - 1].getAttribute('data-column-id'), edge: 'after' };
+    }
+
+    /**
      * The whole board page.
      */
     function BoardPage() {
@@ -1018,37 +1042,36 @@ body[data-ds-dark-theme] .dsb-root {
         setColumnDrop(null);
       };
 
-      const onColumnDragOver = (event, column) => {
+      const onColumnDragOver = (event) => {
         if (!draggingColumn) return;
         event.preventDefault();
-        // Dropping a column onto itself is not a move; showing an edge there
-        // would promise something the drop then refuses to do.
-        if (column.id === draggingColumn) {
+        const target = columnTargetAt(event.currentTarget, event.clientX);
+        // Hovering the column that is already in the air promises nothing: the
+        // drop there would be a no-op, so no edge is drawn.
+        if (!target || target.columnId === draggingColumn) {
           setColumnDrop(null);
           return;
         }
-        const box = event.currentTarget.getBoundingClientRect();
-        const edge = event.clientX < box.left + box.width / 2 ? 'before' : 'after';
-        setColumnDrop({ columnId: column.id, edge });
+        setColumnDrop(target);
       };
 
-      const onColumnDrop = (event, column) => {
+      const onColumnDrop = (event) => {
         if (!draggingColumn) return;
         event.preventDefault();
+        const target = columnTargetAt(event.currentTarget, event.clientX);
         const moving = draggingColumn;
-        const edge = columnDrop?.columnId === column.id ? columnDrop.edge : 'after';
         setDraggingColumn(null);
         setColumnDrop(null);
-        if (column.id === moving) return;
+        if (!target || target.columnId === moving) return;
 
         const ids = project.columns.map((item) => item.id);
         const from = ids.indexOf(moving);
         // The list without the column being moved is what the pointer is
         // actually pointing at, so the target index is computed there.
         const rest = ids.filter((id) => id !== moving);
-        const anchor = rest.indexOf(column.id);
+        const anchor = rest.indexOf(target.columnId);
         if (from === -1 || anchor === -1) return;
-        const at = edge === 'before' ? anchor : anchor + 1;
+        const at = target.edge === 'before' ? anchor : anchor + 1;
         if (at === from) return;
         const next = [...rest.slice(0, at), moving, ...rest.slice(at)];
         void moveColumn(moving, next);
@@ -1123,7 +1146,15 @@ body[data-ds-dark-theme] .dsb-root {
         // ---- lanes
         h(
           'div',
-          { className: 'dsb-lanes' },
+          {
+            className: 'dsb-lanes',
+            // Column drops are resolved here, not per lane: a release between
+            // two lanes, past the last one, or over the "new column" tile has
+            // no lane under the pointer, and a handler that lives on the lane
+            // would never fire. The container always has the pointer.
+            onDragOver: onColumnDragOver,
+            onDrop: onColumnDrop,
+          },
           project.columns.map((column) =>
             h(Lane, {
               key: column.id,
@@ -1155,8 +1186,6 @@ body[data-ds-dark-theme] .dsb-root {
               columnDragActive: draggingColumn !== null,
               onColumnDragStart,
               onColumnDragEnd,
-              onColumnDragOver,
-              onColumnDrop,
             }),
           ),
           h(
@@ -1300,8 +1329,6 @@ body[data-ds-dark-theme] .dsb-root {
         columnDragActive,
         onColumnDragStart,
         onColumnDragEnd,
-        onColumnDragOver,
-        onColumnDrop,
       } = props;
 
       const [over, setOver] = useState(false);
@@ -1335,15 +1362,12 @@ body[data-ds-dark-theme] .dsb-root {
           // Which edge a column in the air would land on. A card drag never
           // sets this, so the two indicators cannot show at once.
           'data-col-drop': columnDrop ?? undefined,
+          'data-column-id': column.id,
           'aria-label': column.name,
           onDragOver: (event) => {
-            // Two drags share this element: a card looking for a slot, and a
-            // column looking for an edge. Only one of them can be in the air,
-            // and the state says which.
-            if (columnDragActive) {
-              onColumnDragOver(event, column);
-              return;
-            }
+            // A column drag is handled by the lane container, which sees the
+            // gaps between lanes too. Only a card drag belongs to this element.
+            if (columnDragActive) return;
             setOver(true);
             onDragOverLane(event, column);
           },
@@ -1353,10 +1377,7 @@ body[data-ds-dark-theme] .dsb-root {
           },
           onDrop: (event) => {
             setOver(false);
-            if (columnDragActive) {
-              onColumnDrop(event, column);
-              return;
-            }
+            if (columnDragActive) return;
             onDropLane(event, column);
           },
         },
