@@ -586,7 +586,7 @@ window.__ModuleLoader__.load({
         h(
           'div',
           { style: styles.column },
-          h('header', { style: styles.heading }, h('h1', { style: styles.pageTitle }, 'YQ-前端发布')),
+          h('header', { style: styles.heading }, h('h1', { style: styles.pageTitle }, '前端发布')),
 
           error ? h('p', { style: styles.error }, error) : null,
 
@@ -801,7 +801,7 @@ window.__ModuleLoader__.load({
               name: 'sidebar.panellist',
               id: PANEL_ID,
               order: 40,
-              label: 'YQ-前端发布',
+              label: '前端发布',
             },
             ReleasePanelIcon,
           ),

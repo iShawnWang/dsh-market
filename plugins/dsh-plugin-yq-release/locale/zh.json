@@ -1,6 +1,6 @@
 {
   "meta": {
-    "title": "YQ-前端发布",
+    "title": "前端发布",
     "description": "一句话发布分支：先合并，再发布 Spug 前端或触发小程序构建，并把每次发布记进构建Memory；链路从记录里长出来。",
     "detail": "README.md"
   }

@@ -3,7 +3,7 @@
   "version": "0.3.2",
   "private": false,
   "type": "module",
-  "description": "YQ-前端发布：把「把 feat/h5-xxx 发到测试」变成一句话，自动完成 GitLab 合并、Spug 前端发布与小程序构建。",
+  "description": "前端发布：把「把 feat/h5-xxx 发到测试」变成一句话，自动完成 GitLab 合并、Spug 前端发布与小程序构建。",
   "license": "MIT",
   "main": "lib/index.js",
   "keywords": [

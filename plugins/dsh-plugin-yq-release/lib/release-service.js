@@ -74,7 +74,7 @@ async function resolveSecret(deps, ref, { required = false } = {}) {
   }
   if (!value && required) {
     throw new ReleaseInputError(
-      `凭据 ${ref} 还没有初始化：请在「YQ-前端发布」面板的凭据卡片里填写后重试`,
+      `凭据 ${ref} 还没有初始化：请在「前端发布」面板的凭据卡片里填写后重试`,
       'MISSING_CREDENTIAL',
       { ref },
     );
@@ -207,7 +207,7 @@ export class ReleaseService {
         status: 'blocked',
         code: 'ENDPOINT_NOT_CONFIGURED',
         message:
-          `还没填 ${missing.join(' / ')}：请在「YQ-前端发布」面板的「配置」展项里填好后重试`,
+          `还没填 ${missing.join(' / ')}：请在「前端发布」面板的「配置」展项里填好后重试`,
         details: { missing },
         steps,
         planned,
