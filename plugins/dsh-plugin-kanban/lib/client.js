@@ -24,6 +24,9 @@ window.__ModuleLoader__.load({
     const PANEL_ID = 'dsh-plugin-kanban';
     const BRIDGE_PREFIX = '/api/dsh-kanban';
 
+    /** Must match the drawer's exit animation in the stylesheet. */
+    const DRAWER_EXIT_MS = 140;
+
     const PRIORITIES = [
       { id: 'urgent', label: '紧急' },
       { id: 'high', label: '高' },
@@ -344,10 +347,37 @@ window.__ModuleLoader__.load({
 .dsb-menu-item:hover { background: var(--dsw-alias-interactive-bg-hover); }
 .dsb-menu-item[data-active="true"] { font-weight: 500; }
 .dsb-menu-item[data-tone="danger"] { color: var(--dsw-alias-state-error-primary); }
+.dsb-menu-item:disabled {
+  color: var(--dsw-alias-label-tertiary);
+  cursor: not-allowed;
+  background: transparent;
+}
+.dsb-menu-item-meta {
+  margin-left: auto;
+  color: var(--dsw-alias-label-tertiary);
+  font: 400 11px/18px system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-variant-numeric: tabular-nums;
+}
 .dsb-menu-sep {
   height: 1px;
   margin: 4px 6px;
   background: var(--dsw-alias-border-l2);
+}
+.dsb-menu-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+}
+.dsb-menu-confirm-text {
+  color: var(--dsw-alias-label-secondary);
+  font: 400 12px/18px system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+.dsb-menu-confirm-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 .dsb-scrim {
@@ -373,6 +403,48 @@ window.__ModuleLoader__.load({
   border-left: 1px solid var(--dsw-alias-border-l2);
   background: var(--dsw-alias-bg-layer-1);
   box-shadow: -12px 0 32px -18px color-mix(in srgb, #000 30%, transparent);
+  animation: dsb-drawer-in 180ms cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+.dsb-drawer[data-closing="true"] {
+  animation: dsb-drawer-out 140ms cubic-bezier(0.4, 0, 0.7, 0.3) forwards;
+  pointer-events: none;
+}
+@keyframes dsb-drawer-in {
+  from { transform: translateX(16px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+@keyframes dsb-drawer-out {
+  from { transform: none; opacity: 1; }
+  to { transform: translateX(12px); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dsb-drawer,
+  .dsb-drawer[data-closing="true"] { animation-duration: 1ms; }
+}
+.dsb-drawer-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 15;
+  border: 0;
+  padding: 0;
+  background: color-mix(in srgb, var(--dsw-alias-bg-base) 40%, transparent);
+  -webkit-backdrop-filter: blur(3px) saturate(115%);
+  backdrop-filter: blur(3px) saturate(115%);
+  cursor: default;
+  animation: dsb-scrim-in 180ms ease;
+}
+@keyframes dsb-scrim-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.dsb-drawer-scrim[data-closing="true"] {
+  /* Stays clickable-through-free for its last frame: the board must not take a
+     click that was aimed at the drawer that is still on screen. */
+  animation: dsb-scrim-in 140ms ease reverse forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dsb-drawer-scrim,
+  .dsb-drawer-scrim[data-closing="true"] { animation-duration: 1ms; }
 }
 .dsb-drawer-head {
   display: flex;
@@ -439,6 +511,8 @@ window.__ModuleLoader__.load({
   outline: none;
 }
 .dsb-control:focus-visible { border-color: var(--dsw-alias-brand-primary); }
+.dsb-date { cursor: pointer; }
+.dsb-date::-webkit-calendar-picker-indicator { cursor: pointer; }
 
 .dsb-text {
   box-sizing: border-box;
@@ -584,8 +658,12 @@ window.__ModuleLoader__.load({
       const [menu, setMenu] = useState(null);
       const [dragging, setDragging] = useState(null);
       const [dropTarget, setDropTarget] = useState(null);
+      /** True while the drawer plays its exit animation. */
+      const [closing, setClosing] = useState(false);
 
       const laneRefs = useRef({});
+      const closingRef = useRef(false);
+      const closeTimer = useRef(null);
 
       const load = useCallback(async () => {
         const payload = await call('/board');
@@ -647,16 +725,55 @@ window.__ModuleLoader__.load({
         }
       }, [board, activeProjectId]);
 
-      // Escape closes whatever is on top, one layer at a time.
+      /**
+       * Close the drawer. Edits save on blur, and unmounting a focused field
+       * never fires one, so blur first — closing must not drop keystrokes.
+       *
+       * The panel stays mounted for the length of the exit animation and only
+       * then unmounts, so opening and closing feel like the same motion. While
+       * it is leaving, further closes are ignored.
+       */
+      const closeDrawer = useCallback(() => {
+        if (closingRef.current) return;
+        const active = document.activeElement;
+        if (active && typeof active.blur === 'function') active.blur();
+        closingRef.current = true;
+        setClosing(true);
+        closeTimer.current = setTimeout(() => {
+          closeTimer.current = null;
+          closingRef.current = false;
+          setClosing(false);
+          setOpenCardId(null);
+        }, DRAWER_EXIT_MS);
+      }, []);
+
+      useEffect(
+        () => () => {
+          if (closeTimer.current) clearTimeout(closeTimer.current);
+        },
+        [],
+      );
+
+      // Escape closes whatever is on top, one layer at a time. The listener is
+      // on the capture phase so the drawer wins over the shell's own Escape
+      // handling: while a card is open, Escape belongs to the drawer.
       useEffect(() => {
         const onKeyDown = (event) => {
           if (event.key !== 'Escape') return;
-          if (menu) setMenu(null);
-          else if (openCardId) setOpenCardId(null);
+          if (menu) {
+            event.preventDefault();
+            event.stopPropagation();
+            setMenu(null);
+            return;
+          }
+          if (!openCardId) return;
+          event.preventDefault();
+          event.stopPropagation();
+          closeDrawer();
         };
-        window.addEventListener('keydown', onKeyDown);
-        return () => window.removeEventListener('keydown', onKeyDown);
-      }, [menu, openCardId]);
+        window.addEventListener('keydown', onKeyDown, true);
+        return () => window.removeEventListener('keydown', onKeyDown, true);
+      }, [menu, openCardId, closeDrawer]);
 
       const cardsOf = (columnId) => project?.cards.filter((card) => card.columnId === columnId) ?? [];
 
@@ -822,8 +939,10 @@ window.__ModuleLoader__.load({
           ),
         ),
 
-        // ---- menus
+        // ---- menus. The key remounts the layer whenever a different menu opens,
+        // so a half-finished rename or delete-confirm never carries over.
         menu && h(MenuLayer, {
+          key: menu.kind === 'column' ? `column:${menu.columnId}` : 'projects',
           menu,
           project,
           board,
@@ -853,26 +972,42 @@ window.__ModuleLoader__.load({
           },
         }),
 
-        // ---- drawer
-        openCard && h(CardDrawer, {
-          key: openCard.id,
-          card: openCard,
-          project,
-          onClose: () => setOpenCardId(null),
-          onChange: (patch) =>
-            void mutate('/card/update', { projectId: project.id, cardId: openCard.id, ...patch }),
-          onMove: (columnId) =>
-            void mutate('/card/move', {
-              projectId: project.id,
-              cardId: openCard.id,
-              columnId,
-              index: 0,
+        // ---- drawer: a frosted scrim over the board, then the panel itself.
+        // The scrim is a button so clicking the dimmed area closes the card,
+        // which is what the shadow implies it does.
+        openCard &&
+          h(
+            React.Fragment,
+            null,
+            h('button', {
+              key: 'drawer-scrim',
+              type: 'button',
+              className: 'dsb-drawer-scrim',
+              'aria-label': '关闭卡片详情',
+              'data-closing': closing ? 'true' : undefined,
+              onClick: closeDrawer,
             }),
-          onDelete: async () => {
-            await mutate('/card/delete', { projectId: project.id, cardId: openCard.id });
-            setOpenCardId(null);
-          },
-        }),
+            h(CardDrawer, {
+              key: openCard.id,
+              card: openCard,
+              project,
+              closing,
+              onClose: closeDrawer,
+              onChange: (patch) =>
+                void mutate('/card/update', { projectId: project.id, cardId: openCard.id, ...patch }),
+              onMove: (columnId) =>
+                void mutate('/card/move', {
+                  projectId: project.id,
+                  cardId: openCard.id,
+                  columnId,
+                  index: 0,
+                }),
+              onDelete: async () => {
+                await mutate('/card/delete', { projectId: project.id, cardId: openCard.id });
+                setOpenCardId(null);
+              },
+            }),
+          ),
 
         error &&
           h(
@@ -1039,11 +1174,17 @@ window.__ModuleLoader__.load({
 
     /**
      * The menu layer: one popover, two shapes (project switcher, column actions).
+     *
+     * Deletes are confirmed in place rather than through `window.confirm`: the
+     * native dialog cannot say "move the cards out first", and a destructive
+     * action that can only be answered yes/no tends to be answered yes.
      */
     function MenuLayer(props) {
       const { menu, project, board, onClose, onSelectProject, onCreateProject, onDeleteProject } =
         props;
       const [renaming, setRenaming] = useState(false);
+      /** Which delete is waiting for its second click. */
+      const [confirming, setConfirming] = useState(null);
 
       useEffect(() => {
         if (!renaming) return;
@@ -1062,7 +1203,12 @@ window.__ModuleLoader__.load({
         onClick: onClose,
       });
 
+      /** Two-step confirm block: the question, then the two buttons. */
+      const confirmBlock = (question, onConfirm) =>
+        h(ConfirmDelete, { question, onConfirm, onCancel: () => setConfirming(null) });
+
       if (menu.kind === 'projects') {
+        const projectCards = project.cards.length;
         return [
           close,
           h(
@@ -1095,28 +1241,31 @@ window.__ModuleLoader__.load({
               '新建项目',
             ),
             board.projects.length > 1
-              ? h(
-                  'button',
-                  {
-                    type: 'button',
-                    className: 'dsb-menu-item',
-                    role: 'menuitem',
-                    'data-tone': 'danger',
-                    onClick: () => {
-                      if (window.confirm(`删除项目「${project.name}」及其全部卡片？此操作无法撤销。`)) {
-                        void onDeleteProject();
-                      }
+              ? confirming === 'project'
+                ? confirmBlock(
+                    `删除项目「${project.name}」${projectCards ? `和其中的 ${projectCards} 张卡片` : ''}？无法撤销。`,
+                    () => void onDeleteProject(),
+                  )
+                : h(
+                    'button',
+                    {
+                      type: 'button',
+                      className: 'dsb-menu-item',
+                      role: 'menuitem',
+                      'data-tone': 'danger',
+                      onClick: () => setConfirming('project'),
                     },
-                  },
-                  h(CloseIcon, { size: 13 }),
-                  '删除项目',
-                )
+                    h(CloseIcon, { size: 13 }),
+                    '删除项目',
+                  )
               : null,
           ),
         ];
       }
 
       const column = project.columns.find((item) => item.id === menu.columnId);
+      const columnCards = column ? project.cards.filter((card) => card.columnId === column.id).length : 0;
+      const blocked = columnCards > 0;
 
       return [
         close,
@@ -1154,30 +1303,64 @@ window.__ModuleLoader__.load({
                 },
                 '重命名',
               ),
+          confirming === 'column'
+            ? confirmBlock(`删除列「${column?.name ?? ''}」？无法撤销。`, () => void props.onDeleteColumn())
+            : h(
+                'button',
+                {
+                  type: 'button',
+                  className: 'dsb-menu-item',
+                  role: 'menuitem',
+                  'data-tone': 'danger',
+                  disabled: blocked,
+                  title: blocked ? `「${column?.name ?? ''}」里还有 ${columnCards} 张卡片，移走或删除后才能删除这一列` : undefined,
+                  onClick: () => {
+                    if (blocked) return;
+                    setConfirming('column');
+                  },
+                },
+                '删除列',
+                blocked ? h('span', { className: 'dsb-menu-item-meta' }, `${columnCards} 张`) : null,
+              ),
+        ),
+      ];
+    }
+
+    /**
+     * The second half of a delete: the question, then the two answers.
+     *
+     * Cancel takes the initial focus rather than Delete, so a stray Enter after
+     * opening the menu cancels instead of confirming.
+     */
+    function ConfirmDelete({ question, onConfirm, onCancel }) {
+      const cancelRef = useRef(null);
+      useEffect(() => {
+        cancelRef.current?.focus();
+      }, []);
+      return h(
+        'div',
+        { className: 'dsb-menu-confirm', role: 'group', 'aria-label': question },
+        h('span', { className: 'dsb-menu-confirm-text' }, question),
+        h(
+          'div',
+          { className: 'dsb-menu-confirm-actions' },
+          h(
+            'button',
+            { ref: cancelRef, type: 'button', className: 'dsb-btn', onClick: onCancel },
+            '取消',
+          ),
           h(
             'button',
             {
               type: 'button',
-              className: 'dsb-menu-item',
-              role: 'menuitem',
+              className: 'dsb-btn',
               'data-tone': 'danger',
-              onClick: () => {
-                if (column && column.isFinal) {
-                  if (
-                    !window.confirm(
-                      `「${column.name}」里的 ${project.cards.filter((card) => card.columnId === column.id).length} 张卡片会一起删除。此操作无法撤销。`,
-                    )
-                  ) {
-                    return;
-                  }
-                }
-                void props.onDeleteColumn();
-              },
+              onClick: onConfirm,
             },
-            '删除列',
+            '删除',
           ),
         ),
-      ];
+      );
     }
 
     /**
@@ -1185,7 +1368,7 @@ window.__ModuleLoader__.load({
      * it does. Edits save on blur, not on a Save button — a board has no draft
      * state, and a Save button would only exist to be forgotten.
      */
-    function CardDrawer({ card, project, onClose, onChange, onMove, onDelete }) {
+    function CardDrawer({ card, project, closing, onClose, onChange, onMove, onDelete }) {
       const [title, setTitle] = useState(card.title);
       const [description, setDescription] = useState(card.description ?? '');
       const [confirmDelete, setConfirmDelete] = useState(false);
@@ -1205,7 +1388,12 @@ window.__ModuleLoader__.load({
 
       return h(
         'aside',
-        { className: 'dsb-drawer', role: 'dialog', 'aria-label': '卡片详情' },
+        {
+          className: 'dsb-drawer',
+          role: 'dialog',
+          'aria-label': '卡片详情',
+          'data-closing': closing ? 'true' : undefined,
+        },
         h(
           'div',
           { className: 'dsb-drawer-head' },
@@ -1273,11 +1461,25 @@ window.__ModuleLoader__.load({
               ),
             ),
             h('label', { className: 'dsb-field-label', htmlFor: 'dsb-due' }, '截止'),
+            // A native date input only opens its calendar from the small glyph
+            // at the right edge; anywhere else the click just focuses the field.
+            // Opening the picker on the field's own click makes the whole
+            // control behave like the button it looks like.
             h('input', {
               id: 'dsb-due',
               type: 'date',
-              className: 'dsb-control',
+              className: 'dsb-control dsb-date',
               value: card.dueDate ?? '',
+              onClick: (event) => {
+                const input = event.currentTarget;
+                if (typeof input.showPicker !== 'function') return;
+                try {
+                  input.showPicker();
+                } catch {
+                  // Already open, or refused for lacking a user gesture: the
+                  // field still works, it just needs the glyph clicked.
+                }
+              },
               onChange: (event) => void onChange({ dueDate: event.target.value || null }),
             }),
           ),

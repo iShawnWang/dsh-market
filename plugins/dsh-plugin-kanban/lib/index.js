@@ -136,15 +136,21 @@ function registerBridge(ctx, store) {
           }).then((document) => ({ ok: true, board: document })),
         ),
 
-        // Deleting a column deletes its cards. The panel asks first and says so;
-        // silently reassigning them to a neighbour would look like data loss
-        // that recovered itself, which is worse than data loss you were told about.
+        // A column can only be deleted once it is empty. Deleting a column used
+        // to take its cards with it, which is silent data loss the user never
+        // asked for; moving the cards out first is one drag, and refusing is
+        // recoverable. The panel disables the item and says how many are left.
         makeRoute(ctx, '/column/delete', async (body) =>
           store.update((document) => {
             const project = requireProject(document, body.projectId);
             if (project.columns.length <= 1) throw new Error('the last column cannot be deleted');
+            const column = project.columns.find((item) => item.id === body.columnId);
+            if (!column) throw new Error('column not found');
+            const count = project.cards.filter((card) => card.columnId === column.id).length;
+            if (count > 0) {
+              throw new Error(`「${column.name}」里还有 ${count} 张卡片，移走或删除后才能删除这一列`);
+            }
             project.columns = project.columns.filter((item) => item.id !== body.columnId);
-            project.cards = project.cards.filter((card) => card.columnId !== body.columnId);
           }).then((document) => ({ ok: true, board: document })),
         ),
 
