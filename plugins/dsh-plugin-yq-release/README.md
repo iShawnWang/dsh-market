@@ -6,6 +6,8 @@
 它把平时手工敲的四步（`branch-info` → `merge` → `spug deploy-and-watch` / 小程序构建 → 记账）收进一个工具，
 并保留了原来那些必须踩过才知道的规矩。
 
+![前端发布面板：折叠的配置、每条链路最后一次发布结果、构建Memory](docs/panel.png)
+
 ## 它做什么
 
 ```
@@ -167,6 +169,7 @@ projects:
 | `lib/memory.js` | 构建Memory：追加式发布记录 |
 | `lib/client.js` | 侧边栏面板（React）：折叠的配置展项 + 链路、构建Memory |
 | `docs/memory.md` | 发版经验：踩过的坑、失败码对照、环境备忘 |
+| `docs/panel.png` | 上面那张面板截图 |
 
 ## 已知限制
 
