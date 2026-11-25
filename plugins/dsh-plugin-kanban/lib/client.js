@@ -54,16 +54,18 @@ window.__ModuleLoader__.load({
   color: var(--dsw-alias-label-primary);
   font: 13px/18px var(--dsw-font-family);
   /* Three surfaces, one step apart: the page, the trough a column sits in, and
-     the card that floats in the trough. In light mode both steps are mixed from
-     the page colour, which keeps the trough neutral instead of blue; in dark
-     mode they are two rungs of the neutral scale, because mixing towards white
-     there would lift the trough above the page instead of sinking it. */
-  --dsb-surface-trough: color-mix(in srgb, var(--dsw-alias-bg-base) 94%, var(--dsw-alias-label-primary) 6%);
+     the card that floats in the trough. Every step is mixed from the page
+     colour towards the label colour, so one formula serves both themes: the
+     label flips from near-black to near-white, and the trough stays neutral
+     instead of picking up a blue cast. Each theme tunes how far the steps go —
+     in dark mode a trough below the page reads as a hole punched in the board,
+     so there the trough sits just above the page and the card above it. */
+  --dsb-surface-trough: color-mix(in srgb, var(--dsw-alias-bg-base) 95%, var(--dsw-alias-label-primary) 5%);
   --dsb-surface-card: var(--dsw-static-neutral-bluish-00);
 }
 body[data-ds-dark-theme] .dsb-root {
-  --dsb-surface-trough: var(--dsw-static-neutral-bluish-1000);
-  --dsb-surface-card: var(--dsw-static-neutral-bluish-900);
+  --dsb-surface-trough: color-mix(in srgb, var(--dsw-alias-bg-base) 96%, var(--dsw-alias-label-primary) 4%);
+  --dsb-surface-card: var(--dsw-alias-bg-layer-2);
 }
 
 .dsb-head {
@@ -103,10 +105,10 @@ body[data-ds-dark-theme] .dsb-root {
   box-sizing: border-box;
   display: flex;
   align-items: stretch;
-  gap: 16px;
+  gap: 20px;
   flex: 1 1 auto;
   min-height: 0;
-  padding: 0 20px 16px;
+  padding: 0 24px 20px;
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-gutter: stable;
@@ -136,8 +138,8 @@ body[data-ds-dark-theme] .dsb-root {
   align-items: center;
   gap: 6px;
   flex: 0 0 auto;
-  height: 40px;
-  padding: 4px 6px 0 12px;
+  height: 44px;
+  padding: 4px 10px 0 14px;
 }
 /* A column being dragged dims in place, so the slot it left is visible as the
    gap the drop will fill. */
@@ -189,10 +191,10 @@ body[data-ds-dark-theme] .dsb-root {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   flex: 1 1 auto;
   min-height: 0;
-  padding: 6px;
+  padding: 10px;
   overflow-y: auto;
   overflow-x: hidden;
 }
@@ -207,8 +209,8 @@ body[data-ds-dark-theme] .dsb-root {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 10px 12px 11px;
+  gap: 8px;
+  padding: 12px 14px 13px;
   border-radius: 10px;
   border: 1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 8%, transparent);
   /* The priority edge is reserved on every card, even the ones without a
@@ -329,26 +331,25 @@ body[data-ds-dark-theme] .dsb-root {
   background: var(--dsw-alias-brand-primary);
 }
 
-.dsb-ghost {
-  display: flex;
+.dsb-new-column {
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
-  width: 100%;
-  height: 30px;
-  padding: 0 8px;
+  gap: 5px;
+  flex: 0 0 auto;
+  height: 28px;
+  padding: 0 10px 0 8px;
   border: 0;
   border-radius: 8px;
   background: transparent;
-  color: var(--dsw-alias-label-tertiary);
+  color: var(--dsw-alias-label-secondary);
   font: 400 12px/18px var(--dsw-font-family);
   cursor: pointer;
-  text-align: left;
 }
-.dsb-ghost:hover {
+.dsb-new-column:hover {
   background: var(--dsw-alias-interactive-bg-hover);
   color: var(--dsw-alias-label-primary);
 }
-.dsb-ghost:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary); outline-offset: -1px; }
+.dsb-new-column:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary); outline-offset: 1px; }
 
 .dsb-icon-btn {
   display: inline-flex;
@@ -1141,6 +1142,16 @@ body[data-ds-dark-theme] .dsb-root {
               String(totalCards),
             ),
           ),
+          h(
+            'button',
+            {
+              type: 'button',
+              className: 'dsb-new-column',
+              onClick: () => void mutate('/column/create', { projectId: project.id }),
+            },
+            h(PlusIcon, { size: 13 }),
+            '新建列',
+          ),
         ),
 
         // ---- lanes
@@ -1149,9 +1160,9 @@ body[data-ds-dark-theme] .dsb-root {
           {
             className: 'dsb-lanes',
             // Column drops are resolved here, not per lane: a release between
-            // two lanes, past the last one, or over the "new column" tile has
-            // no lane under the pointer, and a handler that lives on the lane
-            // would never fire. The container always has the pointer.
+            // two lanes or past the last one has no lane under the pointer, and
+            // a handler that lives on the lane would never fire. The container
+            // always has the pointer.
             onDragOver: onColumnDragOver,
             onDrop: onColumnDrop,
           },
@@ -1187,21 +1198,6 @@ body[data-ds-dark-theme] .dsb-root {
               onColumnDragStart,
               onColumnDragEnd,
             }),
-          ),
-          h(
-            'div',
-            { style: { flex: '0 0 auto', width: '264px' } },
-            h(
-              'button',
-              {
-                type: 'button',
-                className: 'dsb-ghost',
-                style: { height: '32px' },
-                onClick: () => void mutate('/column/create', { projectId: project.id }),
-              },
-              h(PlusIcon, { size: 13 }),
-              '新建列',
-            ),
           ),
         ),
 
