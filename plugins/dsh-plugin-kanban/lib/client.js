@@ -139,14 +139,38 @@ body[data-ds-dark-theme] .dsb-root {
   height: 40px;
   padding: 4px 6px 0 12px;
 }
-.dsb-lane-mark {
+/* A column being dragged dims in place, so the slot it left is visible as the
+   gap the drop will fill. */
+.dsb-lane[data-column-dragging="true"] { opacity: 0.35; }
+/* Insertion point while a column is in the air: an edge on the lane the column
+   would land beside. A shadow rather than a border, so nothing reflows. */
+.dsb-lane[data-col-drop="before"] {
+  box-shadow: inset 2px 0 0 var(--dsw-alias-brand-primary);
+}
+.dsb-lane[data-col-drop="after"] {
+  box-shadow: inset -2px 0 0 var(--dsw-alias-brand-primary);
+}
+/* The grip holds the status mark and is the only draggable part of the header:
+   the name and the buttons beside it stay click targets. It is a little wider
+   than the mark so the target is easy to hit, and pulled left so the mark still
+   lines up with the header padding. */
+.dsb-lane-grip {
   display: inline-flex;
   flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin-left: -4px;
+  border-radius: 4px;
   color: var(--dsw-alias-label-tertiary);
+  cursor: grab;
 }
+.dsb-lane-grip:hover { background: var(--dsw-alias-interactive-bg-hover); }
+.dsb-lane-grip:active { cursor: grabbing; }
 /* The done column's mark carries the same green the rest of the product uses
    for finished work, so the column is recognisable without reading its name. */
-.dsb-lane[data-final="true"] .dsb-lane-mark { color: var(--dsw-alias-state-success-primary); }
+.dsb-lane[data-final="true"] .dsb-lane-grip { color: var(--dsw-alias-state-success-primary); }
 .dsb-lane-name {
   flex: 1 1 auto;
   min-width: 0;
@@ -788,6 +812,9 @@ body[data-ds-dark-theme] .dsb-root {
       const [menu, setMenu] = useState(null);
       const [dragging, setDragging] = useState(null);
       const [dropTarget, setDropTarget] = useState(null);
+      /** Column being dragged, and the edge it would land on. */
+      const [draggingColumn, setDraggingColumn] = useState(null);
+      const [columnDrop, setColumnDrop] = useState(null);
       /** True while the drawer plays its exit animation. */
       const [closing, setClosing] = useState(false);
 
@@ -943,6 +970,27 @@ body[data-ds-dark-theme] .dsb-root {
         await mutate('/card/move', { projectId: project.id, cardId, columnId, index });
       };
 
+      /**
+       * Reorder columns. Same optimistic shape as moving a card: the lane jumps
+       * to where the pointer left it, then the host document replaces the guess.
+       */
+      const moveColumn = async (columnId, columnIds) => {
+        if (!project) return;
+        setBoard((current) => {
+          if (!current) return current;
+          return {
+            ...current,
+            projects: current.projects.map((item) => {
+              if (item.id !== project.id) return item;
+              const byId = new Map(item.columns.map((column) => [column.id, column]));
+              const columns = columnIds.map((id) => byId.get(id)).filter(Boolean);
+              return columns.length === item.columns.length ? { ...item, columns } : item;
+            }),
+          };
+        });
+        await mutate('/column/reorder', { projectId: project.id, columnIds });
+      };
+
       const onDragStart = (event, card) => {
         setDragging(card.id);
         event.dataTransfer.effectAllowed = 'move';
@@ -953,6 +1001,57 @@ body[data-ds-dark-theme] .dsb-root {
       const onDragEnd = () => {
         setDragging(null);
         setDropTarget(null);
+      };
+
+      /**
+       * Column drag. The grip in the header is the handle: the lane body
+       * already belongs to the cards, which have a drag of their own.
+       */
+      const onColumnDragStart = (event, column) => {
+        setDraggingColumn(column.id);
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.setData('text/plain', column.id);
+      };
+
+      const onColumnDragEnd = () => {
+        setDraggingColumn(null);
+        setColumnDrop(null);
+      };
+
+      const onColumnDragOver = (event, column) => {
+        if (!draggingColumn) return;
+        event.preventDefault();
+        // Dropping a column onto itself is not a move; showing an edge there
+        // would promise something the drop then refuses to do.
+        if (column.id === draggingColumn) {
+          setColumnDrop(null);
+          return;
+        }
+        const box = event.currentTarget.getBoundingClientRect();
+        const edge = event.clientX < box.left + box.width / 2 ? 'before' : 'after';
+        setColumnDrop({ columnId: column.id, edge });
+      };
+
+      const onColumnDrop = (event, column) => {
+        if (!draggingColumn) return;
+        event.preventDefault();
+        const moving = draggingColumn;
+        const edge = columnDrop?.columnId === column.id ? columnDrop.edge : 'after';
+        setDraggingColumn(null);
+        setColumnDrop(null);
+        if (column.id === moving) return;
+
+        const ids = project.columns.map((item) => item.id);
+        const from = ids.indexOf(moving);
+        // The list without the column being moved is what the pointer is
+        // actually pointing at, so the target index is computed there.
+        const rest = ids.filter((id) => id !== moving);
+        const anchor = rest.indexOf(column.id);
+        if (from === -1 || anchor === -1) return;
+        const at = edge === 'before' ? anchor : anchor + 1;
+        if (at === from) return;
+        const next = [...rest.slice(0, at), moving, ...rest.slice(at)];
+        void moveColumn(moving, next);
       };
 
       const onLaneDragOver = (event, column) => {
@@ -1050,6 +1149,14 @@ body[data-ds-dark-theme] .dsb-root {
               onDragEnd,
               onDragOverLane: onLaneDragOver,
               onDropLane: onLaneDrop,
+              columnDragging: draggingColumn === column.id,
+              columnDrop:
+                columnDrop?.columnId === column.id && draggingColumn ? columnDrop.edge : null,
+              columnDragActive: draggingColumn !== null,
+              onColumnDragStart,
+              onColumnDragEnd,
+              onColumnDragOver,
+              onColumnDrop,
             }),
           ),
           h(
@@ -1188,6 +1295,13 @@ body[data-ds-dark-theme] .dsb-root {
         onDragEnd,
         onDragOverLane,
         onDropLane,
+        columnDragging,
+        columnDrop,
+        columnDragActive,
+        onColumnDragStart,
+        onColumnDragEnd,
+        onColumnDragOver,
+        onColumnDrop,
       } = props;
 
       const [over, setOver] = useState(false);
@@ -1217,8 +1331,19 @@ body[data-ds-dark-theme] .dsb-root {
           className: 'dsb-lane',
           'data-over': over && draggingId ? 'true' : 'false',
           'data-final': column.isFinal ? 'true' : 'false',
+          'data-column-dragging': columnDragging ? 'true' : 'false',
+          // Which edge a column in the air would land on. A card drag never
+          // sets this, so the two indicators cannot show at once.
+          'data-col-drop': columnDrop ?? undefined,
           'aria-label': column.name,
           onDragOver: (event) => {
+            // Two drags share this element: a card looking for a slot, and a
+            // column looking for an edge. Only one of them can be in the air,
+            // and the state says which.
+            if (columnDragActive) {
+              onColumnDragOver(event, column);
+              return;
+            }
             setOver(true);
             onDragOverLane(event, column);
           },
@@ -1228,13 +1353,31 @@ body[data-ds-dark-theme] .dsb-root {
           },
           onDrop: (event) => {
             setOver(false);
+            if (columnDragActive) {
+              onColumnDrop(event, column);
+              return;
+            }
             onDropLane(event, column);
           },
         },
         h(
           'div',
           { className: 'dsb-lane-head' },
-          h('span', { className: 'dsb-lane-mark' }, h(StatusIcon, { done: column.isFinal, size: 14 })),
+          // The grip is the handle, not the whole header: the buttons beside it
+          // are click targets, and a press that turns into a drag would eat the
+          // click the user meant to make.
+          h(
+            'span',
+            {
+              className: 'dsb-lane-grip',
+              draggable: true,
+              title: '拖动这一列',
+              'aria-label': `拖动「${column.name}」这一列`,
+              onDragStart: (event) => onColumnDragStart(event, column),
+              onDragEnd: onColumnDragEnd,
+            },
+            h(StatusIcon, { done: column.isFinal, size: 14 }),
+          ),
           h('span', { className: 'dsb-lane-name' }, column.name),
           h('span', { className: 'dsb-lane-count' }, String(cards.length)),
           h(
