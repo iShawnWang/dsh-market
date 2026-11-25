@@ -81,6 +81,14 @@
   ],
   "dsh-plugin-fe-homepage": [
     {
+      "version": "0.1.5",
+      "publishTimestamp": 1795589226,
+      "engines": {
+        "dsh": ">=0.2.2-rc.1 <0.3.0-0"
+      },
+      "commit": "f528b9b18481aa3ec34ffe2b78c8696f57f07d89"
+    },
+    {
       "version": "0.1.4",
       "publishTimestamp": 1795579682,
       "engines": {
