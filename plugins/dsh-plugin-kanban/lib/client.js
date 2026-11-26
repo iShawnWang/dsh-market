@@ -34,6 +34,16 @@ window.__ModuleLoader__.load({
       { id: 'low', label: '低' },
     ];
 
+    /** Must match COLUMN_ACCENTS in store.js; null is the "no accent" entry. */
+    const COLUMN_ACCENTS = [
+      { id: null, label: '默认' },
+      { id: 'blue', label: '蓝' },
+      { id: 'violet', label: '紫' },
+      { id: 'green', label: '绿' },
+      { id: 'amber', label: '琥珀' },
+      { id: 'red', label: '红' },
+    ];
+
     // ---------------------------------------------------------------- styles
     //
     // One stylesheet, injected once per page. Everything is scoped under .dsb-
@@ -134,6 +144,14 @@ body[data-ds-dark-theme] .dsb-root {
 /* The done column's mark carries the same green the rest of the product uses
    for finished work, so the column is recognisable without reading its name. */
 .dsb-lane[data-final="true"] .dsb-lane-mark { color: var(--dsw-alias-state-success-primary); }
+/* An accent is the user saying "this column, not that one", so it outranks the
+   done green: they picked it on purpose, and the green is only a default. */
+.dsb-lane[data-accent] .dsb-lane-mark { color: var(--dsb-accent); }
+.dsb-lane[data-accent="blue"] { --dsb-accent: var(--dsw-static-blue-500); }
+.dsb-lane[data-accent="violet"] { --dsb-accent: var(--dsw-static-violet-400); }
+.dsb-lane[data-accent="green"] { --dsb-accent: var(--dsw-static-green-500); }
+.dsb-lane[data-accent="amber"] { --dsb-accent: var(--dsw-static-amber-500); }
+.dsb-lane[data-accent="red"] { --dsb-accent: var(--dsw-static-red-500); }
 .dsb-lane-name {
   flex: 1 1 auto;
   min-width: 0;
@@ -440,6 +458,20 @@ body[data-ds-dark-theme] .dsb-root {
 @media (prefers-reduced-motion: reduce) {
   .dsb-hint-bubble { animation-duration: 1ms; }
 }
+/* The accent row: a label and five dots. In the menu rather than on the row
+   itself — the settings row is a name and a handle, and six dots beside every
+   name would read as part of the name. */
+.dsb-menu-accents {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px 6px;
+}
+.dsb-menu-accents-label {
+  flex: 1 1 auto;
+  color: var(--dsw-alias-label-tertiary);
+  font: 400 12px/17px var(--dsw-font-family);
+}
 .dsb-menu-notice {
   margin: 2px 6px 4px;
   padding: 6px 8px;
@@ -641,6 +673,54 @@ body[data-ds-dark-theme] .dsb-root {
   color: var(--dsw-alias-label-tertiary);
 }
 .dsb-settings-row[data-final="true"] .dsb-settings-mark { color: var(--dsw-alias-state-success-primary); }
+.dsb-settings-row[data-accent] .dsb-settings-mark { color: var(--dsb-accent); }
+.dsb-settings-row[data-accent="blue"] { --dsb-accent: var(--dsw-static-blue-500); }
+.dsb-settings-row[data-accent="violet"] { --dsb-accent: var(--dsw-static-violet-400); }
+.dsb-settings-row[data-accent="green"] { --dsb-accent: var(--dsw-static-green-500); }
+.dsb-settings-row[data-accent="amber"] { --dsb-accent: var(--dsw-static-amber-500); }
+.dsb-settings-row[data-accent="red"] { --dsb-accent: var(--dsw-static-red-500); }
+/* The swatches: five dots, one per accent, plus a hollow one for "none". The
+   selected dot is the same size as the rest but gains a ring, so the row does
+   not reflow as the choice moves along it. */
+.dsb-swatches {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 4px;
+}
+.dsb-swatch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: 0;
+  border-radius: 50%;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.dsb-swatch::before {
+  content: '';
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--dsb-swatch);
+}
+.dsb-swatch[data-accent="none"]::before {
+  border: 1px solid var(--dsw-alias-border-l3);
+  background: transparent;
+}
+.dsb-swatch[data-accent="blue"] { --dsb-swatch: var(--dsw-static-blue-500); }
+.dsb-swatch[data-accent="violet"] { --dsb-swatch: var(--dsw-static-violet-400); }
+.dsb-swatch[data-accent="green"] { --dsb-swatch: var(--dsw-static-green-500); }
+.dsb-swatch[data-accent="amber"] { --dsb-swatch: var(--dsw-static-amber-500); }
+.dsb-swatch[data-accent="red"] { --dsb-swatch: var(--dsw-static-red-500); }
+.dsb-swatch:hover { background: var(--dsw-alias-interactive-bg-hover); }
+.dsb-swatch:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary); outline-offset: 1px; }
+/* The ring hugs the dot (20px box minus 4px on each side) instead of tracing
+   the button, which would read as a sixth, larger swatch. */
+.dsb-swatch[aria-pressed="true"] { outline: 1.5px solid var(--dsw-alias-label-secondary); outline-offset: -4px; }
 .dsb-settings-name {
   flex: 1 1 auto;
   min-width: 0;
@@ -1261,6 +1341,12 @@ body[data-ds-dark-theme] .dsb-root {
             setMenu(null);
             await mutate('/column/update', { projectId: project.id, columnId: column.id, isFinal: next });
           },
+          onSetAccent: async (column, accent) => {
+            // The menu stays open: picking a colour is a choice you make by
+            // looking at the row, and closing after the first dot would make
+            // comparing two of them a reopen-every-time exercise.
+            await mutate('/column/update', { projectId: project.id, columnId: column.id, accent });
+          },
           onRenameColumn: async (name) => {
             setMenu(null);
             await mutate('/column/update', { projectId: project.id, columnId: menu.columnId, name });
@@ -1386,6 +1472,7 @@ body[data-ds-dark-theme] .dsb-root {
           className: 'dsb-lane',
           'data-over': over && draggingId ? 'true' : 'false',
           'data-final': column.isFinal ? 'true' : 'false',
+          'data-accent': column.accent ?? undefined,
           'data-column-id': column.id,
           'aria-label': column.name,
           onDragOver: (event) => {
@@ -1589,6 +1676,7 @@ body[data-ds-dark-theme] .dsb-root {
             className: 'dsb-settings-row',
             'data-column-id': column.id,
             'data-final': column.isFinal ? 'true' : 'false',
+            'data-accent': column.accent ?? undefined,
             'data-dragging': movingId === column.id ? 'true' : 'false',
             'data-drop': drop ?? undefined,
             ref: (element) => {
@@ -1856,6 +1944,33 @@ body[data-ds-dark-theme] .dsb-root {
                 },
                 column.isFinal ? '设为普通列' : '设为完成列',
                 h('span', { className: 'dsb-menu-hint', 'aria-hidden': true }, '?'),
+              )
+            : null,
+          column
+            ? h(
+                'div',
+                {
+                  key: 'accents',
+                  className: 'dsb-menu-accents',
+                  role: 'group',
+                  'aria-label': '强调色',
+                },
+                h('span', { className: 'dsb-menu-accents-label' }, '强调色'),
+                COLUMN_ACCENTS.map((accent) =>
+                  h(
+                    'button',
+                    {
+                      key: accent.id ?? 'none',
+                      type: 'button',
+                      className: 'dsb-swatch',
+                      'data-accent': accent.id ?? 'none',
+                      'aria-pressed': (column.accent ?? null) === accent.id ? 'true' : 'false',
+                      'aria-label': accent.label,
+                      title: accent.label,
+                      onClick: () => void props.onSetAccent(column, accent.id),
+                    },
+                  ),
+                ),
               )
             : null,
           confirming === 'column'

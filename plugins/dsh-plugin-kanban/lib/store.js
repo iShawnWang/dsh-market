@@ -38,6 +38,20 @@ const DEFAULT_COLUMNS = [
 export const PRIORITIES = ['urgent', 'high', 'medium', 'low'];
 
 /**
+ * Accent colours a column may carry.
+ *
+ * The point of an accent is to make one column findable at a glance, so the set
+ * stays small and each entry maps to a token the host already defines — a free
+ * colour picker would let a board drift into unreadable combinations.
+ */
+export const COLUMN_ACCENTS = ['blue', 'violet', 'green', 'amber', 'red'];
+
+/** Accent as stored: a known id, or null for "no accent". */
+export function normalizeAccent(value) {
+  return typeof value === 'string' && COLUMN_ACCENTS.includes(value) ? value : null;
+}
+
+/**
  * How many change-log entries one card keeps. A card edited a hundred times is
  * still one card; the log is there to answer "what happened", not to be an
  * audit trail, and an unbounded list would grow the whole board file with it.
@@ -111,6 +125,7 @@ export function emptyDocument() {
     id: randomUUID(),
     name: column.name,
     isFinal: column.isFinal,
+    accent: null,
   }));
   return {
     version: 1,
@@ -147,8 +162,11 @@ export function normalize(value) {
               id: String(column.id ?? randomUUID()),
               name: String(column.name ?? '未命名'),
               isFinal: column.isFinal === true,
+              // An unknown accent reads as no accent: a colour the stylesheet
+              // has no rule for would otherwise paint nothing and look broken.
+              accent: normalizeAccent(column.accent),
             }))
-        : [{ id: randomUUID(), name: '待办', isFinal: false }];
+        : [{ id: randomUUID(), name: '待办', isFinal: false, accent: null }];
       // A project with no columns cannot hold a card, so the repair above is
       // what lets a damaged document still open instead of showing an empty lane
       // area with nowhere to drop anything.

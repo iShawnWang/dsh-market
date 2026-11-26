@@ -15,7 +15,7 @@
 import { randomUUID } from 'node:crypto';
 import { defineTool } from '@deepseek-ai/dsh-tools';
 import { normalize } from './store.js';
-import { BoardStore, PRIORITIES, logChange, logIfChanged, nextCardNumber, pickProject, requireCard, requireProject, resolveDataFile } from './store.js';
+import { BoardStore, PRIORITIES, logChange, logIfChanged, nextCardNumber, normalizeAccent, pickProject, requireCard, requireProject, resolveDataFile } from './store.js';
 
 export { Config } from './config.js';
 
@@ -148,6 +148,7 @@ function registerBridge(ctx, store) {
               id: randomUUID(),
               name: String(body.name ?? '新列').slice(0, 60),
               isFinal: false,
+              accent: null,
             });
           }).then((document) => ({ ok: true, board: document })),
         ),
@@ -158,6 +159,13 @@ function registerBridge(ctx, store) {
             const column = project.columns.find((item) => item.id === body.columnId);
             if (!column) throw new Error('column not found');
             if (typeof body.name === 'string') column.name = body.name.slice(0, 60);
+            if ('accent' in body) {
+              // An explicit null clears the accent. An id the stylesheet has no
+              // rule for is ignored rather than stored — and rather than
+              // clearing: a typo should not silently drop the user's colour.
+              if (body.accent === null) column.accent = null;
+              else if (normalizeAccent(body.accent)) column.accent = normalizeAccent(body.accent);
+            }
             if ('isFinal' in body) {
               const next = body.isFinal === true;
               // One column is where work ends. Marking a new one moves the
