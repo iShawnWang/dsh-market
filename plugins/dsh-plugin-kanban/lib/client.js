@@ -401,8 +401,7 @@ body[data-ds-dark-theme] .dsb-root {
 }
 /* A question mark after a verb that needs one line of explaining. It sits right
    against the label it annotates rather than at the far edge: pushed out, it
-   reads as a separate control instead of a footnote on that one verb. The
-   tooltip is the item's own title, so the mark never has to be aimed at. */
+   reads as a separate control instead of a footnote on that one verb. */
 .dsb-menu-hint {
   display: inline-flex;
   align-items: center;
@@ -420,6 +419,34 @@ body[data-ds-dark-theme] .dsb-root {
 .dsb-menu-item:hover .dsb-menu-hint {
   border-color: var(--dsw-alias-label-tertiary);
   color: var(--dsw-alias-label-secondary);
+}
+/* The explanation itself. Drawn as our own layer rather than left to the title
+   attribute: the native tooltip is slow, unstyled, and does not appear at all
+   in some hosts. Fixed positioning keeps it out of the menu's scroll container,
+   which would otherwise clip it. */
+.dsb-hint-bubble {
+  position: fixed;
+  z-index: 32;
+  box-sizing: border-box;
+  max-width: 260px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: var(--dsw-alias-tooltip-bg);
+  color: var(--dsw-alias-tooltip-label);
+  font: 400 12px/17px var(--dsw-font-family);
+  box-shadow: 0 6px 18px -6px color-mix(in srgb, #000 30%, transparent);
+  pointer-events: none;
+  animation: dsb-hint-in 90ms ease;
+}
+/* Anchored by its right edge when it flips to the left of the menu, so the gap
+   to the menu stays 8px whatever the bubble's own width turns out to be. */
+.dsb-hint-bubble[data-flip="true"] { transform: translateX(-100%); }
+@keyframes dsb-hint-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dsb-hint-bubble { animation-duration: 1ms; }
 }
 .dsb-menu-notice {
   margin: 2px 6px 4px;
@@ -1694,6 +1721,8 @@ body[data-ds-dark-theme] .dsb-root {
       const [confirming, setConfirming] = useState(null);
       /** Why the last delete attempt was refused, shown where the user clicked. */
       const [notice, setNotice] = useState(null);
+      /** The open explanation: its text and where it is anchored. */
+      const [hint, setHint] = useState(null);
 
       useEffect(() => {
         if (!renaming) return;
@@ -1726,6 +1755,35 @@ body[data-ds-dark-theme] .dsb-root {
         : `完成列里的卡片算做完，卡面会变淡。同一时间只有一列是完成列${
             finalColumn && finalColumn.id !== column?.id ? `，现在是「${finalColumn.name}」` : ''
           }`;
+
+      /**
+       * Anchor the explanation beside the menu, level with the item that owns
+       * it. Beside rather than below: the menu is a short stack of rows, and a
+       * bubble hanging under one row would cover the next one — the very row
+       * the reader is about to pick.
+       */
+      /**
+       * Anchor the explanation beside the menu, level with the item that owns
+       * it. Beside rather than below: the menu is a short stack of rows, and a
+       * bubble hanging under one row would cover the next one — the very row
+       * the reader is about to pick.
+       */
+      const showHint = (element) => {
+        const item = element.getBoundingClientRect();
+        const panel = (element.closest?.('.dsb-menu') ?? element).getBoundingClientRect();
+        const width = window.innerWidth || 0;
+        const height = window.innerHeight || 0;
+        const right = panel.right ?? panel.left + (panel.width ?? 200);
+        // Flip to the other side when there is no room on the right.
+        const flip = width > 0 && right + 276 > width;
+        // With flip, the bubble hangs off its right edge (see the CSS rule), so
+        // the 8px gap survives whatever width the text wraps to.
+        const x = flip ? panel.left - 8 : right + 8;
+        // Level with the item, nudged up when the bubble would run off the
+        // bottom of the window.
+        const y = height > 0 ? Math.max(8, Math.min(item.top, height - 96)) : Math.max(8, item.top);
+        setHint({ text: finishHint, x, y, flip });
+      };
 
       // Deleting a column is only ever offered, never pre-refused: a greyed
       // out row explains nothing, and the reason ("still has cards") is more
@@ -1800,11 +1858,11 @@ body[data-ds-dark-theme] .dsb-root {
                   type: 'button',
                   className: 'dsb-menu-item',
                   role: 'menuitem',
-                  // The tooltip hangs off the whole item, not just the mark: the
-                  // mark is 14px wide, and a hint you have to aim at is a hint
-                  // nobody reads.
-                  title: finishHint,
                   'aria-label': `${column.isFinal ? '设为普通列' : '设为完成列'}。${finishHint}`,
+                  onMouseEnter: (event) => showHint(event.currentTarget),
+                  onMouseLeave: () => setHint(null),
+                  onFocus: (event) => showHint(event.currentTarget),
+                  onBlur: () => setHint(null),
                   onClick: () => void props.onToggleFinal(column, !column.isFinal),
                 },
                 column.isFinal ? '设为普通列' : '设为完成列',
@@ -1829,6 +1887,19 @@ body[data-ds-dark-theme] .dsb-root {
             ? h('div', { key: 'notice', id: 'dsb-menu-notice', className: 'dsb-menu-notice', role: 'status' }, notice)
             : null,
         ),
+        hint
+          ? h(
+              'div',
+              {
+                key: 'hint',
+                className: 'dsb-hint-bubble',
+                role: 'tooltip',
+                'data-flip': hint.flip ? 'true' : undefined,
+                style: { left: `${hint.x}px`, top: `${hint.y}px` },
+              },
+              hint.text,
+            )
+          : null,
       ];
     }
 
