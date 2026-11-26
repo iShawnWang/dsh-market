@@ -8,6 +8,8 @@
 
 ![前端发布面板：折叠的配置、每条链路最后一次发布结果、构建Memory](docs/panel.png)
 
+![发布结果卡片：链路、分支、提交、合并、构建、分支状态](docs/result-card.png)
+
 ## 它做什么
 
 ```
@@ -170,6 +172,7 @@ projects:
 | `lib/client.js` | 侧边栏面板（React）：折叠的配置展项 + 链路、构建Memory |
 | `docs/memory.md` | 发版经验：踩过的坑、失败码对照、环境备忘 |
 | `docs/panel.png` | 上面那张面板截图 |
+| `docs/result-card.png` | 上面那张发布结果卡片截图 |
 
 ## 已知限制
 
