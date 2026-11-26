@@ -76,16 +76,34 @@ export function resolveProjects(config, records = []) {
 }
 
 /**
+ * Whether a candidate record outranks the current pick for the same chain.
+ * A successful run beats any failed one; otherwise the newer record wins, and an
+ * equal timestamp lets the later line win, matching `ReleaseMemory#latestByChain`.
+ * @param {{succeeded: boolean, at: string}} candidate - record under consideration.
+ * @param {{succeeded: boolean, at: string}} current - record picked so far.
+ * @returns {boolean} true when the candidate should replace the current pick.
+ */
+function outranks(candidate, current) {
+  if (candidate.succeeded !== current.succeeded) return candidate.succeeded;
+  return candidate.at >= current.at;
+}
+
+/**
  * Rebuild chains from what previous releases actually did. A learned chain is
  * `explicitOnly`: it is never inferred from a branch name, because the build memory
  * records what was released, not which branch prefixes should select it. Name
  * the project or the chain and it resolves.
+ *
+ * One chain per project and chain id, taken from the newest run that succeeded:
+ * a failed attempt may well have been aimed at a target branch that does not
+ * exist (the wrongly typed value is usually the first one), so only a success
+ * proves the learned target is real. A chain that never succeeded keeps its
+ * newest record instead of disappearing, so naming it still works.
  * @param {Array<object>} [records] - build memory.
  * @returns {Array<{projectId: string, chainId: string, chain: object}>} learned chains.
  */
 export function learnedChains(records = []) {
-  const out = [];
-  const seen = new Set();
+  const best = new Map();
   for (const record of records ?? []) {
     const projectId = record?.project;
     if (!projectId) continue;
@@ -95,8 +113,22 @@ export function learnedChains(records = []) {
     const chainId = snapshot?.id ?? (application ? `${provider}-${application}` : '');
     if (!provider || !chainId) continue;
     const key = `${projectId}/${chainId}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
+    const candidate = {
+      projectId,
+      chainId,
+      provider,
+      application,
+      snapshot,
+      record,
+      succeeded: record?.result === 'success',
+      at: String(record?.timestamp ?? ''),
+    };
+    const current = best.get(key);
+    if (!current || outranks(candidate, current)) best.set(key, candidate);
+  }
+
+  const out = [];
+  for (const { projectId, chainId, provider, application, snapshot, record } of best.values()) {
     const spugApp = snapshot?.spugApp ?? (provider === 'spug' ? application : '');
     const qqcProject = snapshot?.qqcProject ?? (provider === 'qqc' ? application : '');
     out.push({

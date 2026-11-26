@@ -284,14 +284,17 @@ export class GitLabClient {
     }
 
     const target = await this.readTargetCommit(projectId, targetBranch, onProgress);
+    // `null` rather than `undefined` for the fields that may be missing: this
+    // object travels out through tool output, which must survive a JSON round
+    // trip, and `undefined` does not.
     return {
       state: 'merged',
       alreadyMerged: false,
       mrIid: mr.iid,
-      mrUrl: ready.mrUrl ?? mr.web_url,
-      commitId: target?.id,
-      commitShort: target?.short_id,
-      commitTitle: target?.title,
+      mrUrl: ready.mrUrl ?? mr.web_url ?? null,
+      commitId: target?.id ?? null,
+      commitShort: target?.short_id ?? null,
+      commitTitle: target?.title ?? null,
     };
   }
 

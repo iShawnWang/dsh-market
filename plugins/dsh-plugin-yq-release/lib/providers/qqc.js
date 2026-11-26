@@ -127,7 +127,10 @@ export class QqcClient {
    * @returns {Promise<object>} status payload.
    */
   async getStatus(project) {
-    return this.get('status', { project });
+    // `project` is a required query parameter here, so this must go through
+    // `request`; `get` deliberately carries no query parameters.
+    const { data } = await this.request('status', { project });
+    return data;
   }
 
   /**

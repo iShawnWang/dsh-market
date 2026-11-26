@@ -159,7 +159,9 @@ export class ReleaseService {
   async run(input, { onProgress = () => {} } = {}) {
     const startedAt = this.now();
     const steps = [];
-    const record = (step, status, detail) => {
+    const record = (step, status, detail = '') => {
+      // `detail` defaults to `''` because steps travel out as tool output,
+      // where an `undefined` property fails the lossless-JSON check.
       steps.push({ step, status, detail, at: new Date(this.now()).toISOString() });
       if (detail) onProgress(detail);
     };
@@ -321,9 +323,11 @@ export class ReleaseService {
           requestId: request.id,
           requestName: name,
           status: status.status,
-          statusAlias: status.status_alias,
-          reason: status.reason,
-          failHostIds: status.fail_host_ids,
+          // Fall back to `null`: these fields are absent on some Spug replies,
+          // and `undefined` would fail the tool layer's JSON check.
+          statusAlias: status.status_alias ?? null,
+          reason: status.reason ?? null,
+          failHostIds: status.fail_host_ids ?? null,
           timedOut: Boolean(status.timedOut),
         };
 
@@ -394,7 +398,7 @@ export class ReleaseService {
               ? (mergeResult.message ?? '无需合并')
               : `已合并 !${mergeResult.mrIid}`,
           );
-          commitId = mergeResult.commitId ?? undefined;
+          commitId = mergeResult.commitId ?? null;
         }
 
         // Identify the base commit before probing: when the build box is off,
@@ -452,7 +456,10 @@ export class ReleaseService {
           provider: 'qqc',
           application: planned.chainConfig.qqcProject,
           environment: planned.environment,
-          commitId: parsed.commit,
+          // Never leave this `undefined`: the tool layer rejects any payload
+          // containing undefined as "not lossless JSON", which would turn a
+          // readable build result into an opaque tool error.
+          commitId: parsed.commit ?? commitId ?? null,
           success: parsed.success,
         };
         if (!parsed.success) {
@@ -584,7 +591,9 @@ export class ReleaseService {
       status: 'failed',
       code,
       message: error.message,
-      details: error.details ?? { status: error.status },
+      // `status` may be absent on an error, so it is dropped rather than
+      // carried as `undefined` into the tool output.
+      details: error.details ?? (error.status === undefined ? null : { status: error.status }),
       steps,
       planned,
       mergeResult,
