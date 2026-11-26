@@ -391,14 +391,6 @@ body[data-ds-dark-theme] .dsb-root {
 .dsb-menu-item:hover { background: var(--dsw-alias-interactive-bg-hover); }
 .dsb-menu-item[data-active="true"] { font-weight: 500; }
 .dsb-menu-item[data-tone="danger"] { color: var(--dsw-alias-state-error-primary); }
-/* What the menu is about, before the verbs: the column's name is already on the
-   row that opened it, so this line carries the one fact the row no longer does. */
-.dsb-menu-meta {
-  padding: 4px 8px 6px;
-  color: var(--dsw-alias-label-tertiary);
-  font: 400 12px/17px var(--dsw-font-family);
-  font-variant-numeric: tabular-nums;
-}
 /* A question mark after a verb that needs one line of explaining. It sits right
    against the label it annotates rather than at the far edge: pushed out, it
    reads as a separate control instead of a footnote on that one verb. */
@@ -1817,9 +1809,6 @@ body[data-ds-dark-theme] .dsb-root {
         h(
           'div',
           { key: 'menu', className: 'dsb-menu', style: { ...style, minWidth: '200px' }, role: 'menu' },
-          column
-            ? h('div', { key: 'meta', className: 'dsb-menu-meta' }, `${columnCards} 张卡片`)
-            : null,
           renaming
             ? h(
                 'div',
