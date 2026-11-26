@@ -391,6 +391,36 @@ body[data-ds-dark-theme] .dsb-root {
 .dsb-menu-item:hover { background: var(--dsw-alias-interactive-bg-hover); }
 .dsb-menu-item[data-active="true"] { font-weight: 500; }
 .dsb-menu-item[data-tone="danger"] { color: var(--dsw-alias-state-error-primary); }
+/* What the menu is about, before the verbs: the column's name is already on the
+   row that opened it, so this line carries the one fact the row no longer does. */
+.dsb-menu-meta {
+  padding: 4px 8px 6px;
+  color: var(--dsw-alias-label-tertiary);
+  font: 400 12px/17px var(--dsw-font-family);
+  font-variant-numeric: tabular-nums;
+}
+/* A question mark after a verb that needs one line of explaining. It sits right
+   against the label it annotates rather than at the far edge: pushed out, it
+   reads as a separate control instead of a footnote on that one verb. The
+   tooltip is the item's own title, so the mark never has to be aimed at. */
+.dsb-menu-hint {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  margin-left: 6px;
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--dsw-alias-border-l3);
+  border-radius: 50%;
+  color: var(--dsw-alias-label-tertiary);
+  font: 500 9px/1 var(--dsw-font-family);
+  cursor: help;
+}
+.dsb-menu-item:hover .dsb-menu-hint {
+  border-color: var(--dsw-alias-label-tertiary);
+  color: var(--dsw-alias-label-secondary);
+}
 .dsb-menu-notice {
   margin: 2px 6px 4px;
   padding: 6px 8px;
@@ -599,44 +629,6 @@ body[data-ds-dark-theme] .dsb-root {
   text-overflow: ellipsis;
   white-space: nowrap;
   font: 400 14px/20px var(--dsw-font-family);
-}
-.dsb-settings-count {
-  flex: 0 0 auto;
-  color: var(--dsw-alias-label-tertiary);
-  font: 400 12px/18px var(--dsw-font-family);
-  font-variant-numeric: tabular-nums;
-}
-/* A switch, not a checkbox: "this column is where work ends" is a state of the
-   column, and a switch reads as state where a tick reads as a task. */
-.dsb-switch {
-  position: relative;
-  flex: 0 0 auto;
-  width: 40px;
-  height: 24px;
-  border: 0;
-  border-radius: 999px;
-  padding: 0;
-  background: var(--dsw-alias-interactive-bg-active);
-  cursor: pointer;
-  transition: background 120ms ease;
-}
-.dsb-switch[aria-checked="true"] { background: var(--dsw-alias-label-primary); }
-.dsb-switch:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary); outline-offset: 2px; }
-.dsb-switch::after {
-  content: '';
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: var(--dsw-alias-bg-base);
-  transition: transform 120ms ease;
-}
-.dsb-switch[aria-checked="true"]::after { transform: translateX(16px); }
-@media (prefers-reduced-motion: reduce) {
-  .dsb-switch,
-  .dsb-switch::after { transition: none; }
 }
 .dsb-settings-add {
   display: flex;
@@ -1229,9 +1221,6 @@ body[data-ds-dark-theme] .dsb-root {
             project,
             onClose: () => setSettingsOpen(false),
             onReorder: (columnIds) => moveColumn(columnIds),
-            onToggleFinal: async (column, next) => {
-              await mutate('/column/update', { projectId: project.id, columnId: column.id, isFinal: next });
-            },
             onCreate: async () => {
               await mutate('/column/create', { projectId: project.id, name: '新列' });
             },
@@ -1249,6 +1238,10 @@ body[data-ds-dark-theme] .dsb-root {
           menu,
           project,
           onClose: () => setMenu(null),
+          onToggleFinal: async (column, next) => {
+            setMenu(null);
+            await mutate('/column/update', { projectId: project.id, columnId: column.id, isFinal: next });
+          },
           onRenameColumn: async (name) => {
             setMenu(null);
             await mutate('/column/update', { projectId: project.id, columnId: menu.columnId, name });
@@ -1491,13 +1484,11 @@ body[data-ds-dark-theme] .dsb-root {
      * shape is a deliberate act, so it gets its own surface.
      */
     function SettingsSheet(props) {
-      const { project, onClose, onReorder, onToggleFinal, onCreate, onOpenColumnMenu } = props;
+      const { project, onClose, onReorder, onCreate, onOpenColumnMenu } = props;
       /** Column being dragged inside the list, and the row it would land on. */
       const [movingId, setMovingId] = useState(null);
       const [dropAt, setDropAt] = useState(null);
       const rowRefs = useRef({});
-
-      const cardsIn = (columnId) => project.cards.filter((card) => card.columnId === columnId).length;
 
       /** Which row edge the pointer is closest to, measured over the whole list. */
       const rowTargetAt = (clientY) => {
@@ -1605,18 +1596,6 @@ body[data-ds-dark-theme] .dsb-root {
             h(StatusIcon, { done: column.isFinal, size: 15 }),
           ),
           h('span', { className: 'dsb-settings-name' }, column.name),
-          h('span', { className: 'dsb-settings-count' }, String(cardsIn(column.id))),
-          h(
-            'button',
-            {
-              type: 'button',
-              className: 'dsb-switch',
-              role: 'switch',
-              'aria-checked': column.isFinal ? 'true' : 'false',
-              'aria-label': `「${column.name}」是完成列`,
-              onClick: () => void onToggleFinal(column, !column.isFinal),
-            },
-          ),
           h(
             'button',
             {
@@ -1656,7 +1635,7 @@ body[data-ds-dark-theme] .dsb-root {
               'div',
               { className: 'dsb-settings-heading' },
               h('h2', { className: 'dsb-settings-title' }, '列'),
-              h('p', { className: 'dsb-settings-sub' }, '拖动以重新排序。完成列中的任务计为已完成。'),
+              h('p', { className: 'dsb-settings-sub' }, '拖动以重新排序'),
             ),
             h(
               'button',
@@ -1702,7 +1681,7 @@ body[data-ds-dark-theme] .dsb-root {
     }
 
     /**
-     * The column menu: rename, and delete.
+     * The column menu: rename, move the finish line, and delete.
      *
      * Deletes are confirmed in place rather than through `window.confirm`: the
      * native dialog cannot say "move the cards out first", and a destructive
@@ -1739,6 +1718,14 @@ body[data-ds-dark-theme] .dsb-root {
 
       const column = project.columns.find((item) => item.id === menu.columnId);
       const columnCards = column ? project.cards.filter((card) => card.columnId === column.id).length : 0;
+      const finalColumn = project.columns.find((item) => item.isFinal);
+      // One sentence, said once: it is the tooltip, the accessible name's tail,
+      // and the only place this rule is written down in the panel.
+      const finishHint = column?.isFinal
+        ? '取消之后，这一列里的卡片不再算完成'
+        : `完成列里的卡片算做完，卡面会变淡。同一时间只有一列是完成列${
+            finalColumn && finalColumn.id !== column?.id ? `，现在是「${finalColumn.name}」` : ''
+          }`;
 
       // Deleting a column is only ever offered, never pre-refused: a greyed
       // out row explains nothing, and the reason ("still has cards") is more
@@ -1772,6 +1759,9 @@ body[data-ds-dark-theme] .dsb-root {
         h(
           'div',
           { key: 'menu', className: 'dsb-menu', style: { ...style, minWidth: '200px' }, role: 'menu' },
+          column
+            ? h('div', { key: 'meta', className: 'dsb-menu-meta' }, `${columnCards} 张卡片`)
+            : null,
           renaming
             ? h(
                 'div',
@@ -1803,6 +1793,24 @@ body[data-ds-dark-theme] .dsb-root {
                 },
                 '重命名',
               ),
+          column
+            ? h(
+                'button',
+                {
+                  type: 'button',
+                  className: 'dsb-menu-item',
+                  role: 'menuitem',
+                  // The tooltip hangs off the whole item, not just the mark: the
+                  // mark is 14px wide, and a hint you have to aim at is a hint
+                  // nobody reads.
+                  title: finishHint,
+                  'aria-label': `${column.isFinal ? '设为普通列' : '设为完成列'}。${finishHint}`,
+                  onClick: () => void props.onToggleFinal(column, !column.isFinal),
+                },
+                column.isFinal ? '设为普通列' : '设为完成列',
+                h('span', { className: 'dsb-menu-hint', 'aria-hidden': true }, '?'),
+              )
+            : null,
           confirming === 'column'
             ? confirmBlock(`删除列「${column?.name ?? ''}」？无法撤销。`, () => void runDeleteColumn())
             : h(
