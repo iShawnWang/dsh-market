@@ -11,6 +11,14 @@
   ],
   "dsh-plugin-yq-release": [
     {
+      "version": "0.3.3",
+      "publishTimestamp": 1795682912,
+      "engines": {
+        "dsh": ">=0.2.2-rc.1 <0.3.0-0"
+      },
+      "commit": "edc946a770919de3669b48195fad90c52aebedef"
+    },
+    {
       "version": "0.3.2",
       "publishTimestamp": 1795488281,
       "engines": {
