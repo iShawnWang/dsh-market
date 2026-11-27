@@ -4,10 +4,10 @@
     "zh-cn": "看板"
   },
   "description": {
-    "en": "A kanban board stored as one local JSON file: no account, no server, no sync. Drag cards by hand or create them from a conversation — both write the same document.",
-    "zh-cn": "存在一个本地 JSON 文件里的看板：没有账号、没有服务端、没有同步。手动拖卡片，或在对话里让智能体建卡片，写的是同一份文档。"
+    "en": "A kanban board stored as one local JSON file: no account, no server, no sync. Drag cards by hand, create them from a conversation, or press run to have the board start a session that moves the card for you.",
+    "zh-cn": "存在一个本地 JSON 文件里的看板：没有账号、没有服务端、没有同步。手动拖卡片、在对话里让智能体建卡片，或者点开始执行让看板新开一个会话替你推进这张卡片。"
   },
-  "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+CiAgPHJlY3QgeD0iMy41IiB5PSI0LjUiIHdpZHRoPSI1IiBoZWlnaHQ9IjE1IiByeD0iMS40IiBzdHJva2U9IiM3QzhDRjgiIHN0cm9rZS13aWR0aD0iMS41Ii8+CiAgPHJlY3QgeD0iMTAuNSIgeT0iNC41IiB3aWR0aD0iNSIgaGVpZ2h0PSIxMCIgcng9IjEuNCIgc3Ryb2tlPSIjN0M4Q0Y4IiBzdHJva2Utd2lkdGg9IjEuNSIvPgogIDxyZWN0IHg9IjE3LjUiIHk9IjQuNSIgd2lkdGg9IjMiIGhlaWdodD0iNi41IiByeD0iMS4yIiBzdHJva2U9IiM3QzhDRjgiIHN0cm9rZS13aWR0aD0iMS41Ii8+Cjwvc3ZnPgo=",
+  "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+CiAgPCEtLQogICAgS2FuYmFuIHBsdWdpbiBpY29uLgogICAgTHVjaWRlICJrYW5iYW4iIChodHRwczovL2x1Y2lkZS5kZXYvaWNvbnMva2FuYmFuKSwgdW5jaGFuZ2VkIGdlb21ldHJ5OwogICAgcHJvamVjdCBwYWxldHRlIGFuZCBhIDEuNSBzdHJva2Ugb24gdGhlIDI0cHggY2FudmFzLgoKICAgIElTQyBMaWNlbnNlCiAgICBDb3B5cmlnaHQgKGMpIDIwMjYgTHVjaWRlIEljb25zIGFuZCBDb250cmlidXRvcnMKICAgIGh0dHBzOi8vZ2l0aHViLmNvbS9sdWNpZGUtaWNvbnMvbHVjaWRlL2Jsb2IvbWFpbi9MSUNFTlNFCgogICAgUGVybWlzc2lvbiB0byB1c2UsIGNvcHksIG1vZGlmeSwgYW5kL29yIGRpc3RyaWJ1dGUgdGhpcyBzb2Z0d2FyZSBmb3IgYW55CiAgICBwdXJwb3NlIHdpdGggb3Igd2l0aG91dCBmZWUgaXMgaGVyZWJ5IGdyYW50ZWQsIHByb3ZpZGVkIHRoYXQgdGhlIGFib3ZlCiAgICBjb3B5cmlnaHQgbm90aWNlIGFuZCB0aGlzIHBlcm1pc3Npb24gbm90aWNlIGFwcGVhciBpbiBhbGwgY29waWVzLgogICAgVEhFIFNPRlRXQVJFIElTIFBST1ZJREVEICJBUyBJUyIgQU5EIFRIRSBBVVRIT1IgRElTQ0xBSU1TIEFMTCBXQVJSQU5USUVTCiAgICBXSVRIIFJFR0FSRCBUTyBUSElTIFNPRlRXQVJFIElOQ0xVRElORyBBTEwgSU1QTElFRCBXQVJSQU5USUVTIE9GCiAgICBNRVJDSEFOVEFCSUxJVFkgQU5EIEZJVE5FU1MuIElOIE5PIEVWRU5UIFNIQUxMIFRIRSBBVVRIT1IgQkUgTElBQkxFIEZPUgogICAgQU5ZIFNQRUNJQUwsIERJUkVDVCwgSU5ESVJFQ1QsIE9SIENPTlNFUVVFTlRJQUwgREFNQUdFUyBPUiBBTlkgREFNQUdFUwogICAgV0hBVFNPRVZFUiBSRVNVTFRJTkcgRlJPTSBMT1NTIE9GIFVTRSwgREFUQSBPUiBQUk9GSVRTLCBXSEVUSEVSIElOIEFOCiAgICBBQ1RJT04gT0YgQ09OVFJBQ1QsIE5FR0xJR0VOQ0UgT1IgT1RIRVIgVE9SVElPVVMgQUNUSU9OLCBBUklTSU5HIE9VVCBPRgogICAgT1IgSU4gQ09OTkVDVElPTiBXSVRIIFRIRSBVU0UgT1IgUEVSRk9STUFOQ0UgT0YgVEhJUyBTT0ZUV0FSRS4KICAtLT4KICA8cGF0aCBkPSJNNSAzdjE0IiBzdHJva2U9IiM3QzhDRjgiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KICA8cGF0aCBkPSJNMTIgM3Y4IiBzdHJva2U9IiM3QzhDRjgiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KICA8cGF0aCBkPSJNMTkgM3YxOCIgc3Ryb2tlPSIjN0M4Q0Y4IiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjwvc3ZnPgo=",
   "category": "tools",
   "labels": [],
   "keywords": [
@@ -15,8 +15,10 @@
     "board",
     "task",
     "json",
+    "session",
     "看板",
-    "任务"
+    "任务",
+    "会话"
   ],
   "repository": {
     "url": "https://github.com/iShawnWang/dsh-market",

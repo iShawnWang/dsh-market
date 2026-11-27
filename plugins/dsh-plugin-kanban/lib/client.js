@@ -34,16 +34,6 @@ window.__ModuleLoader__.load({
       { id: 'low', label: '低' },
     ];
 
-    /** Must match COLUMN_ACCENTS in store.js; null is the "no accent" entry. */
-    const COLUMN_ACCENTS = [
-      { id: null, label: '默认' },
-      { id: 'blue', label: '蓝' },
-      { id: 'violet', label: '紫' },
-      { id: 'green', label: '绿' },
-      { id: 'amber', label: '琥珀' },
-      { id: 'red', label: '红' },
-    ];
-
     // ---------------------------------------------------------------- styles
     //
     // One stylesheet, injected once per page. Everything is scoped under .dsb-
@@ -72,21 +62,24 @@ window.__ModuleLoader__.load({
      so there the trough sits just above the page and the card above it. */
   --dsb-surface-trough: color-mix(in srgb, var(--dsw-alias-bg-base) 95%, var(--dsw-alias-label-primary) 5%);
   --dsb-surface-card: var(--dsw-static-neutral-bluish-00);
+  /* The accent is DSH's own info pink — the fill the composer's send button
+     uses — not --dsw-alias-brand-primary. That token is the label colour here
+     (near white), so filling a button with it produced a pale grey slab with
+     white text on it. --dsb-on-accent is ink mixed from the accent itself, so
+     the label stays readable on a pastel fill and follows the accent if the
+     theme changes it. */
+  --dsb-accent: var(--dsw-alias-button-info-fill, var(--dsw-alias-brand-primary));
+  --dsb-accent-hover: var(--dsw-alias-button-info-hover, var(--dsb-accent));
+  --dsb-on-accent: color-mix(in srgb, var(--dsb-accent) 16%, #241016);
+  /* The pastel fill is only legible as a *fill*. As text or a hairline it turns
+     into a watermark on the light theme, so those uses mix the same hue towards
+     the label colour instead: it darkens on white and lightens on dark, which
+     is exactly what a readable accent has to do in both themes. */
+  --dsb-accent-ink: color-mix(in srgb, var(--dsb-accent) 46%, var(--dsw-alias-label-primary));
 }
 body[data-ds-dark-theme] .dsb-root {
   --dsb-surface-trough: color-mix(in srgb, var(--dsw-alias-bg-base) 96%, var(--dsw-alias-label-primary) 4%);
   --dsb-surface-card: var(--dsw-alias-bg-layer-2);
-}
-
-.dsb-head {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 12px;
-  flex: 0 0 auto;
-  min-height: 48px;
-  /* Matches the lane strip gutter so the button lines up with the last lane. */
-  padding: 0 24px;
 }
 
 .dsb-lanes {
@@ -96,7 +89,7 @@ body[data-ds-dark-theme] .dsb-root {
   gap: 20px;
   flex: 1 1 auto;
   min-height: 0;
-  padding: 0 24px 20px;
+  padding: 20px 24px;
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-gutter: stable;
@@ -129,8 +122,8 @@ body[data-ds-dark-theme] .dsb-root {
   height: 44px;
   padding: 4px 10px 0 14px;
 }
-/* The status mark. Columns are reordered in the settings page, so nothing here
-   is a drag handle: the header is a label, not a control. */
+/* The column's mark. The header is a label, not a control: there is nothing here
+   to drag, rename, or configure. */
 .dsb-lane-mark {
   display: inline-flex;
   flex: 0 0 auto;
@@ -141,17 +134,6 @@ body[data-ds-dark-theme] .dsb-root {
   margin-left: -4px;
   color: var(--dsw-alias-label-tertiary);
 }
-/* The done column's mark carries the same green the rest of the product uses
-   for finished work, so the column is recognisable without reading its name. */
-.dsb-lane[data-final="true"] .dsb-lane-mark { color: var(--dsw-alias-state-success-primary); }
-/* An accent is the user saying "this column, not that one", so it outranks the
-   done green: they picked it on purpose, and the green is only a default. */
-.dsb-lane[data-accent] .dsb-lane-mark { color: var(--dsb-accent); }
-.dsb-lane[data-accent="blue"] { --dsb-accent: var(--dsw-static-blue-500); }
-.dsb-lane[data-accent="violet"] { --dsb-accent: var(--dsw-static-violet-400); }
-.dsb-lane[data-accent="green"] { --dsb-accent: var(--dsw-static-green-500); }
-.dsb-lane[data-accent="amber"] { --dsb-accent: var(--dsw-static-amber-500); }
-.dsb-lane[data-accent="red"] { --dsb-accent: var(--dsw-static-red-500); }
 .dsb-lane-name {
   flex: 1 1 auto;
   min-width: 0;
@@ -159,11 +141,6 @@ body[data-ds-dark-theme] .dsb-root {
   text-overflow: ellipsis;
   white-space: nowrap;
   font: 500 14px/20px var(--dsw-font-family);
-}
-.dsb-lane-count {
-  color: var(--dsw-alias-label-tertiary);
-  font: 400 12px/18px var(--dsw-font-family);
-  font-variant-numeric: tabular-nums;
 }
 
 .dsb-cards {
@@ -216,9 +193,9 @@ body[data-ds-dark-theme] .dsb-root {
 .dsb-card[data-priority="urgent"] { --dsb-priority-color: var(--dsw-alias-state-error-primary); }
 .dsb-card[data-priority="high"] { --dsb-priority-color: var(--dsw-alias-state-warn-primary); }
 .dsb-card[data-priority="medium"] { --dsb-priority-color: var(--dsw-alias-static-amber-400, var(--dsw-alias-state-warn-primary)); }
-.dsb-card[data-priority="low"] { --dsb-priority-color: var(--dsw-alias-static-blue-500, var(--dsw-alias-brand-primary)); }
+.dsb-card[data-priority="low"] { --dsb-priority-color: var(--dsw-alias-static-blue-500, var(--dsb-accent)); }
 .dsb-card:focus-visible {
-  outline: 2px solid var(--dsw-alias-brand-primary);
+  outline: 2px solid color-mix(in srgb, var(--dsw-alias-label-primary) 40%, transparent);
   outline-offset: 1px;
 }
 .dsb-card[data-dragging="true"] { opacity: 0.45; }
@@ -248,6 +225,29 @@ body[data-ds-dark-theme] .dsb-root {
 }
 .dsb-card[data-done="true"][data-priority] .dsb-card-priority {
   color: var(--dsw-alias-label-tertiary);
+}
+
+/* A card waiting on someone is the one thing on this board that cannot move by
+   itself, so it is lifted out of the column rather than tinted: the amber ring
+   surrounds the whole card, where the priority edge can only own one side, and
+   it survives the finished-card treatment because a done card can still be
+   waiting on a person. */
+.dsb-card[data-needs-human="true"] {
+  border-color: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 48%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 7%, var(--dsb-surface-card));
+}
+.dsb-card[data-needs-human="true"]:hover {
+  border-color: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 68%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 10%, var(--dsb-surface-card));
+}
+.dsb-card[data-needs-human="true"][data-done="true"] {
+  border-color: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 34%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 5%, transparent);
+}
+/* The card a session is working on: the only card on the board that is moving
+   without anyone touching it. */
+.dsb-card[data-executing="true"] {
+  border-color: color-mix(in srgb, var(--dsb-accent-ink) 34%, transparent);
 }
 
 .dsb-card-top {
@@ -302,36 +302,30 @@ body[data-ds-dark-theme] .dsb-root {
   white-space: nowrap;
 }
 .dsb-chip[data-overdue="true"] { color: var(--dsw-alias-state-error-primary); }
+.dsb-chip[data-needs-human="true"] {
+  border-color: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 42%, transparent);
+  color: var(--dsw-alias-state-warn-primary);
+}
+.dsb-chip[data-executing="true"] {
+  border-color: color-mix(in srgb, var(--dsb-accent-ink) 40%, transparent);
+  color: var(--dsb-accent-ink);
+}
+.dsb-chip[data-executing="true"] .dsb-spin { animation: dsb-spin 900ms linear infinite; }
+.dsb-spin { display: flex; }
+.dsb-btn .dsb-spin { animation: dsb-spin 900ms linear infinite; }
+@keyframes dsb-spin {
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dsb-chip[data-executing="true"] .dsb-spin,
+  .dsb-btn .dsb-spin { animation: none; }
+}
 
 .dsb-drop {
   height: 2px;
   margin: -4px 0;
   border-radius: 2px;
-  background: var(--dsw-alias-brand-primary);
-}
-
-.dsb-settings-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-  width: 28px;
-  height: 28px;
-  border: 0;
-  border-radius: 8px;
-  padding: 0;
-  background: transparent;
-  color: var(--dsw-alias-label-secondary);
-  cursor: pointer;
-}
-.dsb-settings-btn:hover {
-  background: var(--dsw-alias-interactive-bg-hover);
-  color: var(--dsw-alias-label-primary);
-}
-.dsb-settings-btn:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary); outline-offset: 1px; }
-.dsb-settings-btn[aria-expanded="true"] {
-  background: var(--dsw-alias-interactive-bg-active);
-  color: var(--dsw-alias-label-primary);
+  background: var(--dsb-accent);
 }
 
 .dsb-icon-btn {
@@ -352,7 +346,7 @@ body[data-ds-dark-theme] .dsb-root {
   background: var(--dsw-alias-interactive-bg-hover);
   color: var(--dsw-alias-label-primary);
 }
-.dsb-icon-btn:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary); outline-offset: 1px; }
+.dsb-icon-btn:focus-visible { outline: 2px solid color-mix(in srgb, var(--dsw-alias-label-primary) 40%, transparent); outline-offset: 1px; }
 
 .dsb-btn {
   display: inline-flex;
@@ -368,7 +362,30 @@ body[data-ds-dark-theme] .dsb-root {
   cursor: pointer;
 }
 .dsb-btn:hover { background: var(--dsw-alias-interactive-bg-hover); }
-.dsb-btn:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary); outline-offset: 1px; }
+.dsb-btn:focus-visible { outline: 2px solid color-mix(in srgb, var(--dsw-alias-label-primary) 40%, transparent); outline-offset: 1px; }
+/* Deleting is one icon, not a labelled button: it is the only action here that
+   destroys something, so it should not read like a peer of the other two. */
+.dsb-trash-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 8px;
+  border: 0;
+  background: transparent;
+  color: var(--dsw-alias-label-tertiary);
+  cursor: pointer;
+}
+.dsb-trash-btn:hover {
+  background: color-mix(in srgb, var(--dsw-alias-state-error-primary) 12%, transparent);
+  color: var(--dsw-alias-state-error-primary);
+}
+.dsb-trash-btn:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--dsw-alias-state-error-primary) 45%, transparent);
+  outline-offset: 1px;
+}
 .dsb-btn[data-tone="danger"] {
   border-color: color-mix(in srgb, var(--dsw-alias-state-error-primary) 40%, transparent);
   color: var(--dsw-alias-state-error-primary);
@@ -376,136 +393,30 @@ body[data-ds-dark-theme] .dsb-root {
 .dsb-btn[data-tone="danger"]:hover {
   background: color-mix(in srgb, var(--dsw-alias-state-error-primary) 10%, transparent);
 }
-
-.dsb-menu {
-  position: absolute;
-  /* Always the topmost layer: a menu is opened from whatever is underneath it,
-     including the settings sheet, and must never be painted behind its source. */
-  z-index: 31;
-  min-width: 200px;
-  max-width: 280px;
-  padding: 4px;  border-radius: 10px;
-  border: 1px solid var(--dsw-alias-border-l2);
-  background: var(--dsw-alias-bg-layer-3);
-  box-shadow: 0 8px 24px -6px color-mix(in srgb, #000 22%, transparent);
-  max-height: 320px;
-  overflow-y: auto;
+/* The one button on the board that starts something, so it is the one button
+   that is filled rather than outlined. */
+.dsb-btn[data-tone="primary"] {
+  border-color: transparent;
+  background: var(--dsb-accent);
+  color: var(--dsb-on-accent);
 }
-.dsb-menu-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  height: 28px;
-  padding: 0 8px;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--dsw-alias-label-primary);
-  font: 400 13px/18px var(--dsw-font-family);
-  cursor: pointer;
-  text-align: left;
+.dsb-btn[data-tone="primary"]:hover {
+  background: var(--dsb-accent-hover);
 }
-.dsb-menu-item:hover { background: var(--dsw-alias-interactive-bg-hover); }
-.dsb-menu-item[data-active="true"] { font-weight: 500; }
-.dsb-menu-item[data-tone="danger"] { color: var(--dsw-alias-state-error-primary); }
-/* A question mark after a verb that needs one line of explaining. It sits right
-   against the label it annotates rather than at the far edge: pushed out, it
-   reads as a separate control instead of a footnote on that one verb. */
-.dsb-menu-hint {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-  margin-left: 6px;
-  width: 14px;
-  height: 14px;
-  border: 1px solid var(--dsw-alias-border-l3);
-  border-radius: 50%;
-  color: var(--dsw-alias-label-tertiary);
-  font: 500 9px/1 var(--dsw-font-family);
-  cursor: help;
-}
-.dsb-menu-item:hover .dsb-menu-hint {
-  border-color: var(--dsw-alias-label-tertiary);
-  color: var(--dsw-alias-label-secondary);
-}
-/* The explanation itself. Drawn as our own layer rather than left to the title
-   attribute: the native tooltip is slow, unstyled, and does not appear at all
-   in some hosts. Fixed positioning keeps it out of the menu's scroll container,
-   which would otherwise clip it. */
-.dsb-hint-bubble {
-  position: fixed;
-  z-index: 32;
-  box-sizing: border-box;
-  max-width: 260px;
-  padding: 6px 8px;
-  border-radius: 8px;
-  background: var(--dsw-alias-tooltip-bg);
-  color: var(--dsw-alias-tooltip-label);
-  font: 400 12px/17px var(--dsw-font-family);
-  box-shadow: 0 6px 18px -6px color-mix(in srgb, #000 30%, transparent);
-  pointer-events: none;
-  animation: dsb-hint-in 90ms ease;
-}
-/* Anchored by its right edge when it flips to the left of the menu, so the gap
-   to the menu stays 8px whatever the bubble's own width turns out to be. */
-.dsb-hint-bubble[data-flip="true"] { transform: translateX(-100%); }
-@keyframes dsb-hint-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .dsb-hint-bubble { animation-duration: 1ms; }
-}
-/* The accent row: a label and five dots. In the menu rather than on the row
-   itself — the settings row is a name and a handle, and six dots beside every
-   name would read as part of the name. */
-.dsb-menu-accents {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 8px 6px;
-}
-.dsb-menu-accents-label {
-  flex: 1 1 auto;
-  color: var(--dsw-alias-label-tertiary);
-  font: 400 12px/17px var(--dsw-font-family);
-}
-.dsb-menu-notice {
-  margin: 2px 6px 4px;
-  padding: 6px 8px;
-  border-radius: 6px;
-  border-left: 2px solid color-mix(in srgb, var(--dsw-alias-state-warn-primary) 70%, transparent);
-  background: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 7%, transparent);
-  color: var(--dsw-alias-label-secondary);
-  font: 400 12px/17px var(--dsw-font-family);
-}
-.dsb-menu-confirm {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 8px;
-}
-.dsb-menu-confirm-text {
-  color: var(--dsw-alias-label-secondary);
-  font: 400 12px/18px var(--dsw-font-family);
-}
-.dsb-menu-confirm-actions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-.dsb-scrim {
-  position: fixed;
-  inset: 0;
-  z-index: 30;
-  border: 0;
-  padding: 0;
-  background: transparent;
+.dsb-btn:disabled {
   cursor: default;
+  /* A disabled button does not take pointer events, so the wrapper around it
+     can own the tooltip that says why it is disabled. */
+  pointer-events: none;
+}
+/* Off keeps the same ink and only steps the fill back toward the surface. Fading
+   the whole button instead (or mixing the fill far enough that it turns dark
+   under a dark theme) leaves dark ink on a dark fill, which is the smudge the
+   first version had. */
+.dsb-btn[data-tone="primary"]:disabled {
+  opacity: 1;
+  background: color-mix(in srgb, var(--dsb-accent) 74%, var(--dsw-alias-bg-layer-2));
+  color: var(--dsb-on-accent);
 }
 
 .dsb-drawer {
@@ -539,17 +450,34 @@ body[data-ds-dark-theme] .dsb-root {
   .dsb-drawer,
   .dsb-drawer[data-closing="true"] { animation-duration: 1ms; }
 }
+/* The dimmed area behind the drawer. It is a backdrop, not a control: the
+   element is a plain div, and every state that could repaint it is pinned, so
+   pointing at it or clicking it never changes what it looks like. Only the
+   open/close animation moves it. */
 .dsb-drawer-scrim {
   position: absolute;
   inset: 0;
   z-index: 15;
   border: 0;
   padding: 0;
+  margin: 0;
+  appearance: none;
+  -webkit-appearance: none;
   background: color-mix(in srgb, var(--dsw-alias-bg-base) 40%, transparent);
   -webkit-backdrop-filter: blur(3px) saturate(115%);
   backdrop-filter: blur(3px) saturate(115%);
   cursor: default;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
   animation: dsb-scrim-in 180ms ease;
+}
+.dsb-drawer-scrim:hover,
+.dsb-drawer-scrim:active,
+.dsb-drawer-scrim:focus {
+  background: color-mix(in srgb, var(--dsw-alias-bg-base) 40%, transparent);
+  outline: none;
+  border: 0;
 }
 @keyframes dsb-scrim-in {
   from { opacity: 0; }
@@ -565,191 +493,6 @@ body[data-ds-dark-theme] .dsb-root {
   .dsb-drawer-scrim[data-closing="true"] { animation-duration: 1ms; }
 }
 
-/* ---- settings sheet: column order and the finish line live here, not in the
-   board itself. A lane header is a label; rearranging the board should not
-   require finding a handle and dragging carefully in the middle of the work. */
-.dsb-settings-scrim {
-  position: absolute;
-  inset: 0;
-  z-index: 24;
-  border: 0;
-  padding: 0;
-  background: color-mix(in srgb, var(--dsw-alias-bg-base) 55%, transparent);
-  -webkit-backdrop-filter: blur(3px) saturate(115%);
-  backdrop-filter: blur(3px) saturate(115%);
-  cursor: default;
-  animation: dsb-scrim-in 160ms ease;
-}
-.dsb-settings {
-  box-sizing: border-box;
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 25;
-  display: flex;
-  flex-direction: column;
-  width: min(460px, 100%);
-  border-left: 1px solid var(--dsw-alias-border-l2);
-  background: var(--dsw-alias-bg-layer-1);
-  box-shadow: -12px 0 32px -18px color-mix(in srgb, #000 30%, transparent);
-  animation: dsb-drawer-in 180ms cubic-bezier(0.2, 0.7, 0.3, 1);
-}
-@media (prefers-reduced-motion: reduce) {
-  .dsb-settings-scrim,
-  .dsb-settings { animation-duration: 1ms; }
-}
-.dsb-settings-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 8px;
-  flex: 0 0 auto;
-  padding: 16px 12px 8px 20px;
-}
-.dsb-settings-heading { min-width: 0; }
-.dsb-settings-title {
-  margin: 0;
-  font: 500 15px/22px var(--dsw-font-family);
-}
-.dsb-settings-sub {
-  margin: 2px 0 0;
-  color: var(--dsw-alias-label-tertiary);
-  font: 400 12px/18px var(--dsw-font-family);
-}
-.dsb-settings-body {
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  flex: 1 1 auto;
-  min-height: 0;
-  padding: 8px 20px 20px;
-  overflow-y: auto;
-}
-/* The list is one bordered block with hairline dividers, so a row reads as a
-   member of a set rather than a stack of separate controls. */
-.dsb-settings-list {
-  border: 1px solid var(--dsw-alias-border-l2);
-  border-radius: 12px;
-  overflow: hidden;
-}
-.dsb-settings-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 0 14px 0 10px;
-  height: 48px;
-  background: transparent;
-}
-.dsb-settings-row + .dsb-settings-row { border-top: 1px solid var(--dsw-alias-border-l1); }
-.dsb-settings-row[data-dragging="true"] { opacity: 0.35; }
-.dsb-settings-row[data-drop="before"] { box-shadow: inset 0 2px 0 var(--dsw-alias-brand-primary); }
-.dsb-settings-row[data-drop="after"] { box-shadow: inset 0 -2px 0 var(--dsw-alias-brand-primary); }
-/* The grip is the whole handle here: this sheet exists to reorder, so the row
-   has no other job to protect. */
-.dsb-settings-grip {
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  margin-left: -2px;
-  border: 0;
-  border-radius: 4px;
-  padding: 0;
-  background: transparent;
-  color: var(--dsw-alias-label-tertiary);
-  cursor: grab;
-}
-.dsb-settings-grip:hover { background: var(--dsw-alias-interactive-bg-hover); }
-.dsb-settings-grip:active { cursor: grabbing; }
-.dsb-settings-grip:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary); outline-offset: 1px; }
-.dsb-settings-mark {
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-items: center;
-  color: var(--dsw-alias-label-tertiary);
-}
-.dsb-settings-row[data-final="true"] .dsb-settings-mark { color: var(--dsw-alias-state-success-primary); }
-.dsb-settings-row[data-accent] .dsb-settings-mark { color: var(--dsb-accent); }
-.dsb-settings-row[data-accent="blue"] { --dsb-accent: var(--dsw-static-blue-500); }
-.dsb-settings-row[data-accent="violet"] { --dsb-accent: var(--dsw-static-violet-400); }
-.dsb-settings-row[data-accent="green"] { --dsb-accent: var(--dsw-static-green-500); }
-.dsb-settings-row[data-accent="amber"] { --dsb-accent: var(--dsw-static-amber-500); }
-.dsb-settings-row[data-accent="red"] { --dsb-accent: var(--dsw-static-red-500); }
-/* The swatches: five dots, one per accent, plus a hollow one for "none". The
-   selected dot is the same size as the rest but gains a ring, so the row does
-   not reflow as the choice moves along it. */
-.dsb-swatches {
-  display: flex;
-  flex: 0 0 auto;
-  align-items: center;
-  gap: 4px;
-}
-.dsb-swatch {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  border: 0;
-  border-radius: 50%;
-  padding: 0;
-  background: transparent;
-  cursor: pointer;
-}
-.dsb-swatch::before {
-  content: '';
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: var(--dsb-swatch);
-}
-.dsb-swatch[data-accent="none"]::before {
-  border: 1px solid var(--dsw-alias-border-l3);
-  background: transparent;
-}
-.dsb-swatch[data-accent="blue"] { --dsb-swatch: var(--dsw-static-blue-500); }
-.dsb-swatch[data-accent="violet"] { --dsb-swatch: var(--dsw-static-violet-400); }
-.dsb-swatch[data-accent="green"] { --dsb-swatch: var(--dsw-static-green-500); }
-.dsb-swatch[data-accent="amber"] { --dsb-swatch: var(--dsw-static-amber-500); }
-.dsb-swatch[data-accent="red"] { --dsb-swatch: var(--dsw-static-red-500); }
-.dsb-swatch:hover { background: var(--dsw-alias-interactive-bg-hover); }
-.dsb-swatch:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary); outline-offset: 1px; }
-/* The ring hugs the dot (20px box minus 4px on each side) instead of tracing
-   the button, which would read as a sixth, larger swatch. */
-.dsb-swatch[aria-pressed="true"] { outline: 1.5px solid var(--dsw-alias-label-secondary); outline-offset: -4px; }
-.dsb-settings-name {
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font: 400 14px/20px var(--dsw-font-family);
-}
-.dsb-settings-add {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  height: 44px;
-  margin-top: 4px;
-  padding: 0 14px;
-  border: 1px solid var(--dsw-alias-border-l2);
-  border-radius: 12px;
-  background: transparent;
-  color: var(--dsw-alias-label-secondary);
-  font: 400 13px/18px var(--dsw-font-family);
-  cursor: pointer;
-  text-align: left;
-}
-.dsb-settings-add:hover {
-  background: var(--dsw-alias-interactive-bg-hover);
-  color: var(--dsw-alias-label-primary);
-}
-.dsb-settings-add:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary); outline-offset: 1px; }
 .dsb-drawer-head {
   display: flex;
   align-items: center;
@@ -778,17 +521,38 @@ body[data-ds-dark-theme] .dsb-root {
   border-top: 1px solid var(--dsw-alias-border-l1);
 }
 
+/* The title is a heading that happens to be editable: at rest it has no frame
+   and no fill, so the drawer opens on the card's name rather than on a box
+   waiting to be filled in. The box only appears where the editing happens —
+   hover says "this is a field", focus says "this is the field you are in". */
 .dsb-title-input {
-  width: 100%;
   box-sizing: border-box;
-  padding: 2px 0;
-  border: 0;
-  border-radius: 6px;
+  width: 100%;
+  height: 38px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  border: 1px solid transparent;
   background: transparent;
   color: var(--dsw-alias-label-primary);
-  font: 500 16px/24px var(--dsw-font-family);
+  font: 500 15px/24px var(--dsw-font-family);
   resize: none;
+  overflow: hidden;
   outline: none;
+  transition: background-color 120ms ease-out, border-color 120ms ease-out;
+}
+.dsb-title-input:hover {
+  background: color-mix(in srgb, var(--dsw-alias-label-primary) 5%, transparent);
+}
+/* The field's own border is the focus feedback; the shell's blue ring is
+   explicitly off, so typing never paints a coloured frame around the box. */
+.dsb-title-input:focus,
+.dsb-title-input:focus-visible {
+  outline: none;
+  border-color: color-mix(in srgb, var(--dsw-alias-label-primary) 22%, transparent);
+  background: var(--dsw-alias-bg-layer-2);
+}
+@media (prefers-reduced-motion: reduce) {
+  .dsb-title-input { transition: none; }
 }
 .dsb-title-input::placeholder { color: var(--dsw-alias-label-tertiary); }
 
@@ -815,7 +579,11 @@ body[data-ds-dark-theme] .dsb-root {
   font: 400 13px/18px var(--dsw-font-family);
   outline: none;
 }
-.dsb-control:focus-visible { border-color: var(--dsw-alias-brand-primary); }
+.dsb-control:focus,
+.dsb-control:focus-visible {
+  outline: none;
+  border-color: color-mix(in srgb, var(--dsw-alias-label-primary) 26%, transparent);
+}
 /* The priority select wears the same edge as the card it edits, so the colour
    you picked is visible while you are picking it. The width is reserved on
    every control so the fields below it stay aligned. */
@@ -825,10 +593,190 @@ body[data-ds-dark-theme] .dsb-root {
 .dsb-control[data-priority="urgent"] { --dsb-priority-color: var(--dsw-alias-state-error-primary); }
 .dsb-control[data-priority="high"] { --dsb-priority-color: var(--dsw-alias-state-warn-primary); }
 .dsb-control[data-priority="medium"] { --dsb-priority-color: var(--dsw-alias-static-amber-400, var(--dsw-alias-state-warn-primary)); }
-.dsb-control[data-priority="low"] { --dsb-priority-color: var(--dsw-alias-static-blue-500, var(--dsw-alias-brand-primary)); }
-.dsb-date { cursor: pointer; }
-.dsb-date::-webkit-calendar-picker-indicator { cursor: pointer; }
+.dsb-control[data-priority="low"] { --dsb-priority-color: var(--dsw-alias-static-blue-500, var(--dsb-accent)); }
+/* The date is a button, not a native input: the platform picker paints its own
+   popup in the browser accent, a blue no token on this board reaches. The
+   trigger keeps the control's frame and only adds a calendar mark at the edge,
+   so the two date rows still read as fields. */
+.dsb-date-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+  text-align: left;
+}
+.dsb-date-trigger[data-empty="true"] .dsb-date-value { color: var(--dsw-alias-label-tertiary); }
+.dsb-date-trigger[aria-expanded="true"] {
+  border-color: color-mix(in srgb, var(--dsw-alias-label-primary) 26%, transparent);
+}
+.dsb-date-mark { color: var(--dsw-alias-label-tertiary); }
 
+/* Waiting on a person is a property of a card, not a column. It sits in the
+   footer beside the run button: both are things you do to a card that cannot
+   move itself, and neither is a field you fill in. */
+.dsb-flag-btn {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 0;
+  background: color-mix(in srgb, var(--dsw-alias-label-primary) 7%, transparent);
+  color: var(--dsw-alias-label-secondary);
+  font: 500 12px/18px var(--dsw-font-family);
+  cursor: pointer;
+}
+.dsb-flag-btn:hover { background: color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent); }
+.dsb-flag-btn:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--dsb-accent-ink) 55%, transparent);
+  outline-offset: 1px;
+}
+.dsb-flag-btn[data-on="true"] {
+  background: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 20%, transparent);
+  color: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 90%, var(--dsw-alias-label-primary));
+}
+.dsb-flag-btn[data-on="true"]:hover {
+  background: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 28%, transparent);
+}
+
+/* The footer's right side: the two actions that are about the card as a whole
+   — make it move, or say it cannot. Every other control in the drawer edits a
+   field. */
+.dsb-foot-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+/* Disabled buttons swallow the pointer, so the tooltip that explains why lives
+   on this wrapper instead of on the button itself. */
+.dsb-run-wrap { display: inline-flex; }
+
+/* The calendar floats over the drawer instead of opening inside it: a field
+   that grows to three hundred pixels would push the description and the log
+   down the panel every time a date is looked at, which reads as the drawer
+   rearranging itself rather than as a picker opening. Fixed positioning keeps
+   it out of the drawer's own scrolling box, so it is never clipped by it. */
+.dsb-cal-panel {
+  position: fixed;
+  z-index: 30;
+  box-sizing: border-box;
+  padding: 8px 10px 6px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 10%, transparent);
+  background: var(--dsw-alias-bg-layer-2);
+  box-shadow: 0 14px 32px -14px color-mix(in srgb, #000 34%, transparent);
+  animation: dsb-cal-in 120ms cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+@keyframes dsb-cal-in {
+  from { transform: translateY(-3px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dsb-cal-panel { animation-duration: 1ms; }
+}
+.dsb-cal { --dsb-cal-cell: 30px; }
+.dsb-cal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 26px;
+  margin-bottom: 2px;
+}
+.dsb-cal-nav { display: flex; gap: 2px; }
+.dsb-cal-prev,
+.dsb-cal-next {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--dsw-alias-label-tertiary);
+  cursor: pointer;
+}
+.dsb-cal-prev:hover,
+.dsb-cal-next:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-primary);
+}
+.dsb-cal-prev:focus-visible,
+.dsb-cal-next:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--dsw-alias-label-primary) 40%, transparent);
+  outline-offset: 1px;
+}
+.dsb-cal-label {
+  color: var(--dsw-alias-label-primary);
+  font: 500 13px/20px var(--dsw-font-family);
+}
+.dsb-cal-grid { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.dsb-cal-weekday {
+  height: 24px;
+  color: var(--dsw-alias-label-tertiary);
+  font: 400 11px/16px var(--dsw-font-family);
+}
+.dsb-cal-day { padding: 1px 0; text-align: center; }
+.dsb-cal-daybtn {
+  width: var(--dsb-cal-cell);
+  height: var(--dsb-cal-cell);
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--dsw-alias-label-primary);
+  font: 400 12.5px/1 var(--dsw-font-family);
+  cursor: pointer;
+}
+.dsb-cal-daybtn:hover { background: var(--dsw-alias-interactive-bg-hover); }
+.dsb-cal-daybtn:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--dsw-alias-label-primary) 40%, transparent);
+  outline-offset: -1px;
+}
+.dsb-cal-today:not(.dsb-cal-selected) .dsb-cal-daybtn {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dsw-alias-label-primary) 22%, transparent);
+}
+.dsb-cal-selected .dsb-cal-daybtn {
+  background: var(--dsw-alias-label-primary);
+  color: var(--dsw-alias-bg-layer-1);
+  font-weight: 500;
+}
+.dsb-cal-selected .dsb-cal-daybtn:hover {
+  background: color-mix(in srgb, var(--dsw-alias-label-primary) 84%, transparent);
+}
+.dsb-cal-outside .dsb-cal-daybtn { color: var(--dsw-alias-label-tertiary); }
+.dsb-cal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-top: 4px;
+  padding-top: 6px;
+  border-top: 1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 8%, transparent);
+}
+.dsb-cal-action {
+  height: 24px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--dsw-alias-label-secondary);
+  font: 500 12px/18px var(--dsw-font-family);
+  cursor: pointer;
+}
+.dsb-cal-action:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-primary);
+}
+.dsb-cal-action:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--dsw-alias-label-primary) 40%, transparent);
+  outline-offset: 1px;
+}
 .dsb-text {
   box-sizing: border-box;
   width: 100%;
@@ -842,7 +790,11 @@ body[data-ds-dark-theme] .dsb-root {
   resize: vertical;
   outline: none;
 }
-.dsb-text:focus-visible { border-color: var(--dsw-alias-brand-primary); }
+.dsb-text:focus,
+.dsb-text:focus-visible {
+  outline: none;
+  border-color: color-mix(in srgb, var(--dsw-alias-label-primary) 26%, transparent);
+}
 .dsb-text::placeholder { color: var(--dsw-alias-label-tertiary); }
 
 .dsb-warn {
@@ -918,8 +870,14 @@ body[data-ds-dark-theme] .dsb-root {
     }
 
     // ----------------------------------------------------------------- icons
+    //
+    // Every glyph on this board is a Lucide icon (https://lucide.dev, ISC),
+    // drawn with its own 24x24 geometry so a shape can be held against the
+    // source and recognised. Only the stroke width is ours: Lucide draws at 2,
+    // which reads heavy at 14px beside 13px text, so the board keeps the
+    // lighter 1.7 it has always used.
 
-    function Icon({ d, size = 14, stroke = 1.7 }) {
+    function Icon({ size = 14, stroke = 1.7, children }) {
       return h(
         'svg',
         {
@@ -934,47 +892,112 @@ body[data-ds-dark-theme] .dsb-root {
           'aria-hidden': true,
           style: { display: 'block', flex: '0 0 auto' },
         },
-        h('path', { d }),
+        children,
       );
     }
 
-    const PlusIcon = (p) => h(Icon, { ...p, d: 'M12 5v14M5 12h14' });
-    const MoreIcon = (p) => h(Icon, { ...p, d: 'M6 12h.01M12 12h.01M18 12h.01', stroke: 2.2 });
-    const CloseIcon = (p) => h(Icon, { ...p, d: 'M6 6l12 12M18 6L6 18' });
-    /** Sliders: the settings button, and nothing else. */
-    const SettingsIcon = (p) =>
-      h(Icon, {
-        ...p,
-        d: 'M4 7h10M18 7h2M4 17h4M12 17h8M4 12h6M14 12h6M16 5v4M10 10v4M8 15v4',
-      });
-    /** Six dots: the reorder handle in the settings sheet. */
-    const GripIcon = (p) =>
-      h(Icon, { ...p, d: 'M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01', stroke: 2.4 });
+    /** Lucide `plus`. */
+    const PlusIcon = (p) => h(Icon, p, h('path', { d: 'M5 12h14' }), h('path', { d: 'M12 5v14' }));
+
+    /** Lucide `x`: closes the card drawer. */
+    const CloseIcon = (p) =>
+      h(Icon, p, h('path', { d: 'M18 6 6 18' }), h('path', { d: 'm6 6 12 12' }));
+
+    /** Lucide `calendar`: the mark on a date trigger. */
+    const CalendarIcon = (p) =>
+      h(
+        Icon,
+        p,
+        h('path', { d: 'M8 2v4' }),
+        h('path', { d: 'M16 2v4' }),
+        h('rect', { width: 18, height: 18, x: 3, y: 4, rx: 2 }),
+        h('path', { d: 'M3 10h18' }),
+      );
+
+    /** Lucide `chevron-left`, one month back in the calendar. */
+    const ChevronLeftIcon = (p) => h(Icon, p, h('path', { d: 'm15 18-6-6 6-6' }));
+
+    /** Lucide `chevron-right`, one month on in the calendar. */
+    const ChevronRightIcon = (p) => h(Icon, p, h('path', { d: 'm9 18 6-6-6-6' }));
+
+    /** Lucide `user-round`: the card is waiting on a person. */
+    const PersonIcon = (p) =>
+      h(Icon, p, h('circle', { cx: 12, cy: 8, r: 5 }), h('path', { d: 'M20 21a8 8 0 0 0-16 0' }));
+
+    /** Lucide `play`: start a session for this card. */
+    const PlayIcon = (p) => h(Icon, p, h('path', { d: 'M6 3v18l14-9z' }));
+
+    /** Lucide `loader-circle`, spun by CSS while a session is running. */
+    const LoaderIcon = (p) => h(Icon, p, h('path', { d: 'M21 12a9 9 0 1 1-6.219-8.56' }));
+
+    /** Lucide `arrow-up-right`: open the session this card is running in. */
+    const OpenIcon = (p) =>
+      h(Icon, p, h('path', { d: 'M7 7h10v10' }), h('path', { d: 'M7 17 17 7' }));
+
+    /** Lucide `trash-2`: the one destructive action, kept as a mark not a label. */
+    const TrashIcon = (p) =>
+      h(
+        Icon,
+        p,
+        h('path', { d: 'M3 6h18' }),
+        h('path', { d: 'M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6' }),
+        h('path', { d: 'M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2' }),
+        h('path', { d: 'M10 11v6' }),
+        h('path', { d: 'M14 11v6' }),
+      );
 
     /**
-     * The column's state as a mark: an open ring for work in flight, a filled
-     * check for the column where work ends. It sits before the name so the
-     * column's role is legible before the name is read, and it survives a
-     * rename to anything at all.
+     * One mark per column, so the board can be scanned by shape before any name
+     * is read. All of them are Lucide circles at heart, which keeps the row
+     * looking like one family instead of borrowed pictures: the ring changes
+     * state as work moves along, and only the last one is closed and checked.
+     *
+     * The mark is keyed by column id, not by name — a column's identity in the
+     * file is its id, and the name is just what the label says.
      */
-    function StatusIcon({ done, size = 14 }) {
-      return h(
-        'svg',
-        {
-          width: size,
-          height: size,
-          viewBox: '0 0 24 24',
-          fill: 'none',
-          stroke: 'currentColor',
-          strokeWidth: 1.7,
-          strokeLinecap: 'round',
-          strokeLinejoin: 'round',
-          'aria-hidden': true,
-          style: { display: 'block', flex: '0 0 auto' },
-        },
-        h('circle', { cx: 12, cy: 12, r: 8.5 }),
-        done ? h('path', { d: 'M8.4 12.3l2.6 2.6 4.6-5.2' }) : null,
-      );
+    const COLUMN_ICONS = {
+      /** Lucide `circle-dashed`: not committed yet, edges still open. */
+      backlog: (p) =>
+        h(
+          Icon,
+          p,
+          h('path', { d: 'M10.1 2.182a10 10 0 0 1 3.8 0' }),
+          h('path', { d: 'M13.9 21.818a10 10 0 0 1-3.8 0' }),
+          h('path', { d: 'M17.609 3.721a10 10 0 0 1 2.69 2.7' }),
+          h('path', { d: 'M2.182 13.9a10 10 0 0 1 0-3.8' }),
+          h('path', { d: 'M20.279 17.609a10 10 0 0 1-2.7 2.69' }),
+          h('path', { d: 'M21.818 10.1a10 10 0 0 1 0 3.8' }),
+          h('path', { d: 'M3.721 6.391a10 10 0 0 1 2.7-2.69' }),
+          h('path', { d: 'M6.391 20.279a10 10 0 0 1-2.69-2.7' }),
+        ),
+      /** Lucide `circle`: queued, whole, untouched. */
+      todo: (p) => h(Icon, p, h('circle', { cx: 12, cy: 12, r: 10 })),
+      /** Lucide `loader-circle`: the ring has opened — work is underway. */
+      doing: (p) => h(Icon, p, h('path', { d: 'M21 12a9 9 0 1 1-6.219-8.56' })),
+      /** Lucide `eye`: someone has to look at it before it counts as done. */
+      review: (p) =>
+        h(
+          Icon,
+          p,
+          h('path', {
+            d: 'M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0',
+          }),
+          h('circle', { cx: 12, cy: 12, r: 3 }),
+        ),
+      /** Lucide `circle-check`: closed and checked. */
+      done: (p) =>
+        h(
+          Icon,
+          p,
+          h('circle', { cx: 12, cy: 12, r: 10 }),
+          h('path', { d: 'm16 9-5.5 5.5L8 12' }),
+        ),
+    };
+
+    /** The column's mark: its own icon, or a plain ring for an unknown id. */
+    function ColumnIcon({ columnId, size = 14 }) {
+      const draw = COLUMN_ICONS[columnId] ?? COLUMN_ICONS.todo;
+      return draw({ size });
     }
 
     // --------------------------------------------------------------- utilities
@@ -1010,6 +1033,28 @@ body[data-ds-dark-theme] .dsb-root {
       return `${date.getMonth() + 1}月${date.getDate()}日`;
     }
 
+    /** Local calendar date as `YYYY-MM-DD`, the form the board stores. */
+    function toISODate(date) {
+      const pad = (value) => String(value).padStart(2, '0');
+      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+    }
+
+    /** Parse a stored `YYYY-MM-DD` as a local date, not a UTC instant. */
+    function fromISODate(iso) {
+      if (!iso) return null;
+      const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso));
+      if (!match) return null;
+      const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+      return Number.isNaN(date.getTime()) ? null : date;
+    }
+
+    /** `2026/09/04` — a calendar date the way the date rows show it. */
+    function formatDate(iso) {
+      const date = fromISODate(iso);
+      if (!date) return '未设置';
+      return toISODate(date).replace(/-/g, '/');
+    }
+
     /** Whether a due date is in the past. `today` is a local calendar date. */
     function isOverdue(iso) {
       if (!iso) return false;
@@ -1039,19 +1084,81 @@ body[data-ds-dark-theme] .dsb-root {
     // -------------------------------------------------------------- components
 
     /**
+     * The host context captured at apply time, so a card can jump to the session
+     * it runs in. `openSession` lives on the UI workspace service; the older
+     * `sessions.open` is kept as a fallback for shells that still have it.
+     */
+    let hostContext = null;
+
+    /**
+     * Where a session stands right now, mirroring the shell's own link check.
+     * An archived session is hidden from the workspace groups and owns no live
+     * scope, so asking the shell to open one lands on a released reference.
+     * @param {string} sessionId - session to look up.
+     * @returns {'available'|'archived'|'missing'|'loading'|'unavailable'}
+     */
+    function sessionLinkState(sessionId) {
+      const context = hostContext;
+      if (!context || typeof context.get !== 'function') return 'unavailable';
+      try {
+        const sessions = context.get('sessions')?.list?.getSnapshot();
+        const workspaces = context.get('workspaces')?.list?.getSnapshot();
+        if (!sessions || !workspaces) return 'unavailable';
+        if (sessions.phase === 'pending' || workspaces.phase === 'pending') return 'loading';
+        if (workspaces.archivedSessionIds?.includes(sessionId) === true) return 'archived';
+        if (sessions.ids?.includes(sessionId) !== true) return 'missing';
+        return 'available';
+      } catch {
+        return 'unavailable';
+      }
+    }
+
+    /**
+     * Open a session by id in this window. A card can point at a session the
+     * user archived afterwards, so the archive is lifted first — an archived
+     * session has no live scope and the shell refuses to open it.
+     * @param {string} sessionId - session to open.
+     * @returns {'opened'|'archived'|'missing'|'unavailable'}
+     */
+    async function openSessionById(sessionId) {
+      const context = hostContext;
+      if (!context || typeof context.get !== 'function') return 'unavailable';
+      const ui = context.get('uiWorkspace');
+      if (typeof ui?.openSession !== 'function') return 'unavailable';
+      let state = sessionLinkState(sessionId);
+      if (state === 'archived') {
+        const workspaces = context.get('workspaces');
+        if (typeof workspaces?.unarchiveSession !== 'function') return 'archived';
+        try {
+          await workspaces.unarchiveSession(sessionId);
+        } catch {
+          return 'archived';
+        }
+        state = sessionLinkState(sessionId);
+        if (state === 'archived') return 'archived';
+      }
+      if (state === 'missing') return 'missing';
+      try {
+        ui.openSession(sessionId);
+        return 'opened';
+      } catch {
+        return 'unavailable';
+      }
+    }
+
+    /**
      * The whole board page.
      */
     function BoardPage() {
       const [board, setBoard] = useState(null);
       const [error, setError] = useState(null);
       const [openCardId, setOpenCardId] = useState(null);
-      const [menu, setMenu] = useState(null);
       const [dragging, setDragging] = useState(null);
       const [dropTarget, setDropTarget] = useState(null);
-      /** True while the settings sheet is open. */
-      const [settingsOpen, setSettingsOpen] = useState(false);
       /** True while the drawer plays its exit animation. */
       const [closing, setClosing] = useState(false);
+      /** Workspaces a card can be run in; `[]` until the host answers. */
+      const [workspaces, setWorkspaces] = useState([]);
 
       const laneRefs = useRef({});
       const closingRef = useRef(false);
@@ -1071,12 +1178,26 @@ body[data-ds-dark-theme] .dsb-root {
         void load();
       }, [load]);
 
+      // Workspaces change far less often than the board does, but they are
+      // also the one list the board cannot derive: read them once when the
+      // panel mounts, and again whenever it regains focus so a workspace
+      // opened in another window shows up in the picker.
+      const loadWorkspaces = useCallback(async () => {
+        const payload = await call('/workspaces');
+        if (payload.ok) setWorkspaces(payload.workspaces ?? []);
+      }, []);
+
+      useEffect(() => {
+        void loadWorkspaces();
+      }, [loadWorkspaces]);
+
       // The same document can be changed from the conversation (board_add_card)
       // or by another window, so re-read it whenever this view regains focus.
       useEffect(() => {
         const refresh = () => {
           if (document.visibilityState === 'hidden') return;
           void load();
+          void loadWorkspaces();
         };
         window.addEventListener('focus', refresh);
         document.addEventListener('visibilitychange', refresh);
@@ -1084,7 +1205,26 @@ body[data-ds-dark-theme] .dsb-root {
           window.removeEventListener('focus', refresh);
           document.removeEventListener('visibilitychange', refresh);
         };
-      }, [load]);
+      }, [load, loadWorkspaces]);
+
+      // A running card settles on its own, in a session the person is looking
+      // at instead of this panel — so focus never returns here and nothing
+      // would repaint. While any card is running, poll: a session outlives the
+      // panel's attention, and coming back to a card that still says 执行中
+      // half an hour after it finished would be a lie.
+      const anyRunning = useMemo(
+        () => board?.projects[0]?.cards.some((card) => card.executing === true) ?? false,
+        [board],
+      );
+
+      useEffect(() => {
+        if (!anyRunning) return undefined;
+        const timer = setInterval(() => {
+          if (document.visibilityState === 'hidden') return;
+          void load();
+        }, 4000);
+        return () => clearInterval(timer);
+      }, [anyRunning, load]);
 
       /** Run a mutation and adopt whatever document the host returns. */
       const mutate = useCallback(async (path, body) => {
@@ -1137,32 +1277,24 @@ body[data-ds-dark-theme] .dsb-root {
         [],
       );
 
-      // Escape closes whatever is on top, one layer at a time. The listener is
-      // on the capture phase so the drawer wins over the shell's own Escape
-      // handling: while a card is open, Escape belongs to the drawer.
+      // Escape closes the drawer. The listener is on the capture phase so the
+      // drawer wins over the shell's own Escape handling: while a card is open,
+      // Escape belongs to the drawer — unless a calendar is open inside it,
+      // where Escape is the smaller thing and only closes the calendar.
       useEffect(() => {
         const onKeyDown = (event) => {
           if (event.key !== 'Escape') return;
-          if (menu) {
-            event.preventDefault();
-            event.stopPropagation();
-            setMenu(null);
-            return;
-          }
-          if (settingsOpen) {
-            event.preventDefault();
-            event.stopPropagation();
-            setSettingsOpen(false);
-            return;
-          }
-          if (!openCardId) return;
+          // A calendar open inside the drawer is the smaller thing: Escape
+          // closes it and leaves the card open. The calendar's own listener
+          // handles that case, so this one stands down.
+          if (!openCardId || document.querySelector?.('.dsb-cal-panel')) return;
           event.preventDefault();
           event.stopPropagation();
           closeDrawer();
         };
         window.addEventListener('keydown', onKeyDown, true);
         return () => window.removeEventListener('keydown', onKeyDown, true);
-      }, [menu, settingsOpen, openCardId, closeDrawer]);
+      }, [openCardId, closeDrawer]);
 
       const cardsOf = (columnId) => project?.cards.filter((card) => card.columnId === columnId) ?? [];
 
@@ -1203,24 +1335,13 @@ body[data-ds-dark-theme] .dsb-root {
       };
 
       /**
-       * Reorder columns. Same optimistic shape as moving a card: the lane jumps
-       * to where the row was dropped, then the host document replaces the guess.
+       * Start a session for this card. The host mints the session, puts the card
+       * in 进行中 and reports back with the new board; from then on the card
+       * moves itself, so there is nothing to poll here.
        */
-      const moveColumn = async (columnIds) => {
+      const runCard = async (cardId, workspaceId) => {
         if (!project) return;
-        setBoard((current) => {
-          if (!current) return current;
-          return {
-            ...current,
-            projects: current.projects.map((item) => {
-              if (item.id !== project.id) return item;
-              const byId = new Map(item.columns.map((column) => [column.id, column]));
-              const columns = columnIds.map((id) => byId.get(id)).filter(Boolean);
-              return columns.length === item.columns.length ? { ...item, columns } : item;
-            }),
-          };
-        });
-        await mutate('/column/reorder', { projectId: project.id, columnIds });
+        await mutate('/card/run', { projectId: project.id, cardId, workspaceId: workspaceId ?? null });
       };
 
       const onDragStart = (event, card) => {
@@ -1262,26 +1383,6 @@ body[data-ds-dark-theme] .dsb-root {
         'div',
         { className: 'dsb-root' },
 
-        // ---- head: one board, and one control. Everything that edits the
-        // board's shape — column order, the finish line, adding a column —
-        // lives behind the settings button instead of on the lanes themselves.
-        h(
-          'div',
-          { className: 'dsb-head' },
-          h(
-            'button',
-            {
-              type: 'button',
-              className: 'dsb-settings-btn',
-              onClick: () => setSettingsOpen((open) => !open),
-              title: '看板设置',
-              'aria-label': '看板设置',
-              'aria-expanded': settingsOpen ? 'true' : 'false',
-            },
-            h(SettingsIcon, { size: 16 }),
-          ),
-        ),
-
         // ---- lanes
         h(
           'div',
@@ -1298,14 +1399,6 @@ body[data-ds-dark-theme] .dsb-root {
               },
               onOpenCard: setOpenCardId,
               onAddCard: () => void createCard(column.id),
-              onMenu: (event) => {
-                const box = event.currentTarget.getBoundingClientRect();
-                setMenu({
-                  columnId: column.id,
-                  x: box.right - 200,
-                  y: box.bottom + 4,
-                });
-              },
               onDragStart,
               onDragEnd,
               onDragOverLane: onLaneDragOver,
@@ -1314,70 +1407,20 @@ body[data-ds-dark-theme] .dsb-root {
           ),
         ),
 
-        // ---- settings sheet: column order, the finish line, adding a column.
-        settingsOpen &&
-          h(SettingsSheet, {
-            project,
-            onClose: () => setSettingsOpen(false),
-            onReorder: (columnIds) => moveColumn(columnIds),
-            onCreate: async () => {
-              await mutate('/column/create', { projectId: project.id, name: '新列' });
-            },
-            onOpenColumnMenu: (event, column) => {
-              const box = event.currentTarget.getBoundingClientRect();
-              setMenu({ columnId: column.id, x: box.right - 200, y: box.bottom + 4 });
-            },
-          }),
-
-        // ---- the column menu. The key remounts the layer whenever a different
-        // column is opened, so a half-finished rename or delete-confirm never
-        // carries over.
-        menu && h(MenuLayer, {
-          key: `column:${menu.columnId}`,
-          menu,
-          project,
-          onClose: () => setMenu(null),
-          onToggleFinal: async (column, next) => {
-            setMenu(null);
-            await mutate('/column/update', { projectId: project.id, columnId: column.id, isFinal: next });
-          },
-          onSetAccent: async (column, accent) => {
-            // The menu stays open: picking a colour is a choice you make by
-            // looking at the row, and closing after the first dot would make
-            // comparing two of them a reopen-every-time exercise.
-            await mutate('/column/update', { projectId: project.id, columnId: column.id, accent });
-          },
-          onRenameColumn: async (name) => {
-            setMenu(null);
-            await mutate('/column/update', { projectId: project.id, columnId: menu.columnId, name });
-          },
-          onDeleteColumn: async () => {
-            const payload = await mutate('/column/delete', {
-              projectId: project.id,
-              columnId: menu.columnId,
-            });
-            // The host refuses a column that still holds cards. Its answer is
-            // the truth (the board may have changed in another window since the
-            // menu opened), so keep the menu open and say why instead of
-            // closing on an error the user never sees.
-            if (!payload.ok) return payload.error ?? '删除失败';
-            setMenu(null);
-            return null;
-          },
-        }),
-
         // ---- drawer: a frosted scrim over the board, then the panel itself.
-        // The scrim is a button so clicking the dimmed area closes the card,
-        // which is what the shadow implies it does.
+        // Clicking the dimmed area closes the card, which is what the shadow
+        // implies it does. The scrim is a div, not a button: it is decoration
+        // with a click handler, and a full-panel <button> both paints native
+        // hover chrome and adds a screen-sized tab stop. Keyboard users get
+        // Escape and the drawer's own close button instead.
         openCard &&
           h(
             React.Fragment,
             null,
-            h('button', {
+            h('div', {
               key: 'drawer-scrim',
-              type: 'button',
               className: 'dsb-drawer-scrim',
-              'aria-label': '关闭卡片详情',
+              'aria-hidden': 'true',
               'data-closing': closing ? 'true' : undefined,
               onClick: closeDrawer,
             }),
@@ -1386,6 +1429,7 @@ body[data-ds-dark-theme] .dsb-root {
               card: openCard,
               project,
               closing,
+              workspaces,
               onClose: closeDrawer,
               onChange: (patch) =>
                 void mutate('/card/update', { projectId: project.id, cardId: openCard.id, ...patch }),
@@ -1396,6 +1440,13 @@ body[data-ds-dark-theme] .dsb-root {
                   columnId,
                   index: 0,
                 }),
+              onRun: (workspaceId) => void runCard(openCard.id, workspaceId),
+              onOpenSession: async (sessionId) => {
+                const outcome = await openSessionById(sessionId);
+                if (outcome === 'archived') setError('这个会话在归档里，恢复不了');
+                else if (outcome === 'missing') setError('这个会话已经不在了');
+                else if (outcome === 'unavailable') setError('这个窗口打不开会话');
+              },
               onDelete: async () => {
                 await mutate('/card/delete', { projectId: project.id, cardId: openCard.id });
                 setOpenCardId(null);
@@ -1438,7 +1489,6 @@ body[data-ds-dark-theme] .dsb-root {
         listRef,
         onOpenCard,
         onAddCard,
-        onMenu,
         onDragStart,
         onDragEnd,
         onDragOverLane,
@@ -1472,9 +1522,8 @@ body[data-ds-dark-theme] .dsb-root {
           className: 'dsb-lane',
           'data-over': over && draggingId ? 'true' : 'false',
           'data-final': column.isFinal ? 'true' : 'false',
-          'data-accent': column.accent ?? undefined,
           'data-column-id': column.id,
-          'aria-label': column.name,
+          'aria-label': `${column.name}，${cards.length} 张卡片`,
           onDragOver: (event) => {
             setOver(true);
             onDragOverLane(event, column);
@@ -1494,10 +1543,9 @@ body[data-ds-dark-theme] .dsb-root {
           h(
             'span',
             { className: 'dsb-lane-mark', 'aria-hidden': true },
-            h(StatusIcon, { done: column.isFinal, size: 14 }),
+            h(ColumnIcon, { columnId: column.id, size: 14 }),
           ),
           h('span', { className: 'dsb-lane-name' }, column.name),
-          h('span', { className: 'dsb-lane-count' }, String(cards.length)),
           h(
             'button',
             {
@@ -1508,18 +1556,6 @@ body[data-ds-dark-theme] .dsb-root {
               'aria-label': `在「${column.name}」新建卡片`,
             },
             h(PlusIcon, { size: 14 }),
-          ),
-          h(
-            'button',
-            {
-              type: 'button',
-              className: 'dsb-icon-btn',
-              onClick: onMenu,
-              title: '列操作',
-              'aria-label': `「${column.name}」的列操作`,
-              'aria-haspopup': 'menu',
-            },
-            h(MoreIcon, { size: 14 }),
           ),
         ),
         h('div', { className: 'dsb-cards', ref: listRef }, rows),
@@ -1536,6 +1572,8 @@ body[data-ds-dark-theme] .dsb-root {
       // they are one, and the arrow says which end is which.
       const span = start && due ? `${start} → ${due}` : (due ?? start);
       const overdue = isOverdue(card.dueDate);
+      const needsHuman = card.needsHuman === true;
+      const executing = card.executing === true;
       return h(
         'div',
         {
@@ -1544,6 +1582,8 @@ body[data-ds-dark-theme] .dsb-root {
           'data-dragging': dragging ? 'true' : 'false',
           'data-done': done ? 'true' : 'false',
           'data-priority': card.priority ?? undefined,
+          'data-needs-human': needsHuman ? 'true' : 'false',
+          'data-executing': executing ? 'true' : 'false',
           draggable: true,
           tabIndex: 0,
           role: 'button',
@@ -1572,475 +1612,39 @@ body[data-ds-dark-theme] .dsb-root {
             : null,
         ),
         h('div', { className: 'dsb-card-title' }, card.title || '未命名'),
-        span &&
+        (span || needsHuman || executing) &&
           h(
             'div',
             { className: 'dsb-card-foot' },
-            h('span', { className: 'dsb-chip', 'data-overdue': overdue ? 'true' : 'false' }, span),
-          ),
-      );
-    }
-
-    /**
-     * The settings sheet: where the board's shape is edited.
-     *
-     * Column order and the finish line live here rather than on the board. A
-     * lane header is a label you read while working; making it also a drag
-     * handle means a mis-press while scanning the board rearranges it. Editing
-     * shape is a deliberate act, so it gets its own surface.
-     */
-    function SettingsSheet(props) {
-      const { project, onClose, onReorder, onCreate, onOpenColumnMenu } = props;
-      /** Column being dragged inside the list, and the row it would land on. */
-      const [movingId, setMovingId] = useState(null);
-      const [dropAt, setDropAt] = useState(null);
-      const rowRefs = useRef({});
-
-      /** Which row edge the pointer is closest to, measured over the whole list. */
-      const rowTargetAt = (clientY) => {
-        const rows = project.columns;
-        for (const column of rows) {
-          const box = rowRefs.current[column.id]?.getBoundingClientRect();
-          if (!box) continue;
-          if (clientY < box.top + box.height / 2) return { columnId: column.id, edge: 'before' };
-        }
-        const last = rows[rows.length - 1];
-        return last ? { columnId: last.id, edge: 'after' } : null;
-      };
-
-      const onRowDragStart = (event, column) => {
-        setMovingId(column.id);
-        event.dataTransfer.effectAllowed = 'move';
-        event.dataTransfer.setData('text/plain', column.id);
-      };
-
-      const onRowDragEnd = () => {
-        setMovingId(null);
-        setDropAt(null);
-      };
-
-      const onRowDragOver = (event) => {
-        if (!movingId) return;
-        event.preventDefault();
-        const target = rowTargetAt(event.clientY);
-        // Hovering the row that is already in the air promises nothing.
-        if (!target || target.columnId === movingId) {
-          setDropAt(null);
-          return;
-        }
-        setDropAt(target);
-      };
-
-      const onRowDrop = (event) => {
-        if (!movingId) return;
-        event.preventDefault();
-        const target = rowTargetAt(event.clientY);
-        const moving = movingId;
-        setMovingId(null);
-        setDropAt(null);
-        if (!target || target.columnId === moving) return;
-        const ids = project.columns.map((column) => column.id);
-        const from = ids.indexOf(moving);
-        const rest = ids.filter((id) => id !== moving);
-        const anchor = rest.indexOf(target.columnId);
-        if (from === -1 || anchor === -1) return;
-        const at = target.edge === 'before' ? anchor : anchor + 1;
-        if (at === from) return;
-        void onReorder([...rest.slice(0, at), moving, ...rest.slice(at)]);
-      };
-
-      /**
-       * Keyboard reordering. A drag is not the only way to move a row: focus the
-       * handle and use the arrow keys, which is the only way this works without
-       * a pointer.
-       */
-      const onGripKeyDown = (event, column, index) => {
-        const delta = event.key === 'ArrowUp' ? -1 : event.key === 'ArrowDown' ? 1 : 0;
-        if (delta === 0) return;
-        event.preventDefault();
-        const at = index + delta;
-        if (at < 0 || at >= project.columns.length) return;
-        const ids = project.columns.map((item) => item.id);
-        const next = [...ids];
-        next.splice(index, 1);
-        next.splice(at, 0, column.id);
-        void onReorder(next);
-      };
-
-      const row = (column, index) => {
-        const drop = dropAt?.columnId === column.id && movingId ? dropAt.edge : null;
-        return h(
-          'div',
-          {
-            key: column.id,
-            className: 'dsb-settings-row',
-            'data-column-id': column.id,
-            'data-final': column.isFinal ? 'true' : 'false',
-            'data-accent': column.accent ?? undefined,
-            'data-dragging': movingId === column.id ? 'true' : 'false',
-            'data-drop': drop ?? undefined,
-            ref: (element) => {
-              rowRefs.current[column.id] = element;
-            },
-          },
-          h(
-            'button',
-            {
-              type: 'button',
-              className: 'dsb-settings-grip',
-              draggable: true,
-              title: '拖动排序，或用上下方向键',
-              'aria-label': `调整「${column.name}」的位置`,
-              onDragStart: (event) => onRowDragStart(event, column),
-              onDragEnd: onRowDragEnd,
-              onKeyDown: (event) => onGripKeyDown(event, column, index),
-            },
-            h(GripIcon, { size: 14 }),
-          ),
-          h(
-            'span',
-            { className: 'dsb-settings-mark', 'aria-hidden': true },
-            h(StatusIcon, { done: column.isFinal, size: 15 }),
-          ),
-          h('span', { className: 'dsb-settings-name' }, column.name),
-          h(
-            'button',
-            {
-              type: 'button',
-              className: 'dsb-icon-btn',
-              onClick: (event) => onOpenColumnMenu(event, column),
-              title: '列操作',
-              'aria-label': `「${column.name}」的列操作`,
-              'aria-haspopup': 'menu',
-            },
-            h(MoreIcon, { size: 14 }),
-          ),
-        );
-      };
-
-      return [
-        h('button', {
-          key: 'scrim',
-          type: 'button',
-          className: 'dsb-settings-scrim',
-          'aria-label': '关闭设置',
-          onClick: onClose,
-        }),
-        h(
-          'aside',
-          {
-            key: 'sheet',
-            className: 'dsb-settings',
-            role: 'dialog',
-            'aria-modal': 'true',
-            'aria-label': '看板设置',
-          },
-          h(
-            'div',
-            { className: 'dsb-settings-head' },
-            h(
-              'div',
-              { className: 'dsb-settings-heading' },
-              h('h2', { className: 'dsb-settings-title' }, '列'),
-              h('p', { className: 'dsb-settings-sub' }, '拖动以重新排序'),
-            ),
-            h(
-              'button',
-              {
-                type: 'button',
-                className: 'dsb-icon-btn',
-                onClick: onClose,
-                title: '关闭',
-                'aria-label': '关闭设置',
-              },
-              h(CloseIcon, { size: 16 }),
-            ),
-          ),
-          h(
-            'div',
-            { className: 'dsb-settings-body' },
-            h(
-              'div',
-              {
-                className: 'dsb-settings-list',
-                role: 'list',
-                // The drop is resolved on the container, not per row: a release
-                // between two rows or past the last one has no row under the
-                // pointer, and a handler on the row would never fire.
-                onDragOver: onRowDragOver,
-                onDrop: onRowDrop,
-              },
-              project.columns.map(row),
-            ),
-            h(
-              'button',
-              {
-                type: 'button',
-                className: 'dsb-settings-add',
-                onClick: () => void onCreate(),
-              },
-              h(PlusIcon, { size: 14 }),
-              '添加列',
-            ),
-          ),
-        ),
-      ];
-    }
-
-    /**
-     * The column menu: rename, move the finish line, and delete.
-     *
-     * Deletes are confirmed in place rather than through `window.confirm`: the
-     * native dialog cannot say "move the cards out first", and a destructive
-     * action that can only be answered yes/no tends to be answered yes.
-     */
-    function MenuLayer(props) {
-      const { menu, project, onClose } = props;
-      const [renaming, setRenaming] = useState(false);
-      /** Which delete is waiting for its second click. */
-      const [confirming, setConfirming] = useState(null);
-      /** Why the last delete attempt was refused, shown where the user clicked. */
-      const [notice, setNotice] = useState(null);
-      /** The open explanation: its text and where it is anchored. */
-      const [hint, setHint] = useState(null);
-
-      useEffect(() => {
-        if (!renaming) return;
-        const input = document.querySelector('.dsb-menu .dsb-control');
-        input?.focus();
-        input?.select();
-      }, [renaming]);
-
-      const style = { position: 'fixed', left: `${Math.max(8, menu.x)}px`, top: `${menu.y}px` };
-
-      const close = h('button', {
-        key: 'scrim',
-        type: 'button',
-        className: 'dsb-scrim',
-        'aria-label': '关闭菜单',
-        onClick: onClose,
-      });
-
-      /** Two-step confirm block: the question, then the two buttons. */
-      const confirmBlock = (question, onConfirm) =>
-        h(ConfirmDelete, { question, onConfirm, onCancel: () => setConfirming(null) });
-
-      const column = project.columns.find((item) => item.id === menu.columnId);
-      const columnCards = column ? project.cards.filter((card) => card.columnId === column.id).length : 0;
-      const finalColumn = project.columns.find((item) => item.isFinal);
-      // One sentence, said once: it is the tooltip, the accessible name's tail,
-      // and the only place this rule is written down in the panel.
-      const finishHint = column?.isFinal
-        ? '取消之后，这一列里的卡片不再算完成'
-        : `完成列里的卡片算做完，卡面会变淡。同一时间只有一列是完成列${
-            finalColumn && finalColumn.id !== column?.id ? `，现在是「${finalColumn.name}」` : ''
-          }`;
-
-      /**
-       * Anchor the explanation beside the menu, level with the item that owns
-       * it. Beside rather than below: the menu is a short stack of rows, and a
-       * bubble hanging under one row would cover the next one — the very row
-       * the reader is about to pick.
-       */
-      /**
-       * Anchor the explanation beside the menu, level with the item that owns
-       * it. Beside rather than below: the menu is a short stack of rows, and a
-       * bubble hanging under one row would cover the next one — the very row
-       * the reader is about to pick.
-       */
-      const showHint = (element) => {
-        const item = element.getBoundingClientRect();
-        const panel = (element.closest?.('.dsb-menu') ?? element).getBoundingClientRect();
-        const width = window.innerWidth || 0;
-        const height = window.innerHeight || 0;
-        const right = panel.right ?? panel.left + (panel.width ?? 200);
-        // Flip to the other side when there is no room on the right.
-        const flip = width > 0 && right + 276 > width;
-        // With flip, the bubble hangs off its right edge (see the CSS rule), so
-        // the 8px gap survives whatever width the text wraps to.
-        const x = flip ? panel.left - 8 : right + 8;
-        // Level with the item, nudged up when the bubble would run off the
-        // bottom of the window.
-        const y = height > 0 ? Math.max(8, Math.min(item.top, height - 96)) : Math.max(8, item.top);
-        setHint({ text: finishHint, x, y, flip });
-      };
-
-      // Deleting a column is only ever offered, never pre-refused: a greyed
-      // out row explains nothing, and the reason ("still has cards") is more
-      // useful than a disabled state nobody can read.
-      const blockedReason = !column
-        ? '这一列已经不在了'
-        : columnCards > 0
-          ? `「${column.name}」里还有 ${columnCards} 张卡片，移走或删除后才能删`
-          : null;
-
-      // First click only ever asks. A refusal is spoken right there, where the
-      // user clicked, instead of a greyed-out row that explains nothing.
-      const requestDeleteColumn = () => {
-        if (blockedReason) {
-          setNotice(blockedReason);
-          return;
-        }
-        setConfirming('column');
-      };
-
-      const runDeleteColumn = async () => {
-        const failure = await props.onDeleteColumn();
-        if (failure) {
-          setConfirming(null);
-          setNotice(failure);
-        }
-      };
-
-      return [
-        close,
-        h(
-          'div',
-          { key: 'menu', className: 'dsb-menu', style: { ...style, minWidth: '200px' }, role: 'menu' },
-          renaming
-            ? h(
-                'div',
-                { style: { padding: '4px' } },
-                h('input', {
-                  className: 'dsb-control',
-                  defaultValue: column?.name ?? '',
-                  'aria-label': '列名称',
-                  onKeyDown: (event) => {
-                    if (event.key === 'Enter') {
-                      const value = event.currentTarget.value.trim();
-                      if (value) void props.onRenameColumn(value);
-                    }
-                  },
-                  onBlur: (event) => {
-                    const value = event.currentTarget.value.trim();
-                    if (value && value !== column?.name) void props.onRenameColumn(value);
-                    else onClose();
-                  },
-                }),
-              )
-            : h(
-                'button',
+            needsHuman &&
+              h(
+                'span',
                 {
-                  type: 'button',
-                  className: 'dsb-menu-item',
-                  role: 'menuitem',
-                  onClick: () => setRenaming(true),
+                  className: 'dsb-chip',
+                  'data-needs-human': 'true',
+                  title: '这张卡片在等人工介入',
                 },
-                '重命名',
+                h(PersonIcon, { size: 12 }),
+                '需人工',
               ),
-          column
-            ? h(
-                'button',
+            executing &&
+              h(
+                'span',
                 {
-                  type: 'button',
-                  className: 'dsb-menu-item',
-                  role: 'menuitem',
-                  'aria-label': `${column.isFinal ? '设为普通列' : '设为完成列'}。${finishHint}`,
-                  onMouseEnter: (event) => showHint(event.currentTarget),
-                  onMouseLeave: () => setHint(null),
-                  onFocus: (event) => showHint(event.currentTarget),
-                  onBlur: () => setHint(null),
-                  onClick: () => void props.onToggleFinal(column, !column.isFinal),
+                  className: 'dsb-chip',
+                  'data-executing': 'true',
+                  title: '会话正在处理这张卡片',
                 },
-                column.isFinal ? '设为普通列' : '设为完成列',
-                h('span', { className: 'dsb-menu-hint', 'aria-hidden': true }, '?'),
-              )
-            : null,
-          column
-            ? h(
-                'div',
-                {
-                  key: 'accents',
-                  className: 'dsb-menu-accents',
-                  role: 'group',
-                  'aria-label': '强调色',
-                },
-                h('span', { className: 'dsb-menu-accents-label' }, '强调色'),
-                COLUMN_ACCENTS.map((accent) =>
-                  h(
-                    'button',
-                    {
-                      key: accent.id ?? 'none',
-                      type: 'button',
-                      className: 'dsb-swatch',
-                      'data-accent': accent.id ?? 'none',
-                      'aria-pressed': (column.accent ?? null) === accent.id ? 'true' : 'false',
-                      'aria-label': accent.label,
-                      title: accent.label,
-                      onClick: () => void props.onSetAccent(column, accent.id),
-                    },
-                  ),
+                h(
+                  'span',
+                  { className: 'dsb-spin', style: { display: 'flex' } },
+                  h(LoaderIcon, { size: 12 }),
                 ),
-              )
-            : null,
-          confirming === 'column'
-            ? confirmBlock(`删除列「${column?.name ?? ''}」？无法撤销。`, () => void runDeleteColumn())
-            : h(
-                'button',
-                {
-                  type: 'button',
-                  className: 'dsb-menu-item',
-                  role: 'menuitem',
-                  'data-tone': 'danger',
-                  'aria-describedby': notice ? 'dsb-menu-notice' : undefined,
-                  onClick: requestDeleteColumn,
-                },
-                '删除列',
+                '执行中',
               ),
-          notice
-            ? h('div', { key: 'notice', id: 'dsb-menu-notice', className: 'dsb-menu-notice', role: 'status' }, notice)
-            : null,
-        ),
-        hint
-          ? h(
-              'div',
-              {
-                key: 'hint',
-                className: 'dsb-hint-bubble',
-                role: 'tooltip',
-                'data-flip': hint.flip ? 'true' : undefined,
-                style: { left: `${hint.x}px`, top: `${hint.y}px` },
-              },
-              hint.text,
-            )
-          : null,
-      ];
-    }
-
-    /**
-     * The second half of a delete: the question, then the two answers.
-     *
-     * Cancel takes the initial focus rather than Delete, so a stray Enter after
-     * opening the menu cancels instead of confirming.
-     */
-    function ConfirmDelete({ question, onConfirm, onCancel }) {
-      const cancelRef = useRef(null);
-      useEffect(() => {
-        cancelRef.current?.focus();
-      }, []);
-      return h(
-        'div',
-        { className: 'dsb-menu-confirm', role: 'group', 'aria-label': question },
-        h('span', { className: 'dsb-menu-confirm-text' }, question),
-        h(
-          'div',
-          { className: 'dsb-menu-confirm-actions' },
-          h(
-            'button',
-            { ref: cancelRef, type: 'button', className: 'dsb-btn', onClick: onCancel },
-            '取消',
+            span &&
+              h('span', { className: 'dsb-chip', 'data-overdue': overdue ? 'true' : 'false' }, span),
           ),
-          h(
-            'button',
-            {
-              type: 'button',
-              className: 'dsb-btn',
-              'data-tone': 'danger',
-              onClick: onConfirm,
-            },
-            '删除',
-          ),
-        ),
       );
     }
 
@@ -2053,8 +1657,9 @@ body[data-ds-dark-theme] .dsb-root {
      * @param {object} props - component props.
      * @param {Array} props.history - log entries.
      * @param {Array} props.columns - the project's columns, to name a status.
+     * @param {Array} [props.workspaces] - known workspaces, to name one.
      */
-    function History({ history, columns }) {
+    function History({ history, columns, workspaces }) {
       const entries = Array.isArray(history) ? history : [];
       if (entries.length === 0) return null;
       return h(
@@ -2069,7 +1674,7 @@ body[data-ds-dark-theme] .dsb-root {
               'li',
               { key: `${entry.at}-${index}`, className: 'dsb-history-item' },
               h('span', { className: 'dsb-history-when' }, formatWhen(entry.at)),
-              describeChange(entry, columns),
+              describeChange(entry, columns, workspaces),
             ),
           ),
         ),
@@ -2084,23 +1689,27 @@ body[data-ds-dark-theme] .dsb-root {
       startDate: '开始',
       dueDate: '截止',
       columnId: '状态',
+      needsHuman: '人工介入',
+      workspaceId: '工作区',
+      executing: '执行',
     };
 
     /**
      * One log entry as a sentence: what changed, from what to what.
      * @param {object} entry - log entry.
      * @param {Array} columns - the project's columns, to name a status.
+     * @param {Array} [workspaces] - known workspaces, to name one.
      * @returns {Array} children.
      */
-    function describeChange(entry, columns) {
+    function describeChange(entry, columns, workspaces) {
       if (entry.field === 'created') return ['创建了卡片'];
       const label = FIELD_LABEL[entry.field] ?? entry.field;
       return [
         h('span', { className: 'dsb-history-field' }, label),
         ' ',
-        h('span', { className: 'dsb-history-value' }, displayValue(entry.field, entry.from, columns)),
+        h('span', { className: 'dsb-history-value' }, displayValue(entry.field, entry.from, columns, workspaces)),
         ' → ',
-        h('span', { className: 'dsb-history-value' }, displayValue(entry.field, entry.to, columns)),
+        h('span', { className: 'dsb-history-value' }, displayValue(entry.field, entry.to, columns, workspaces)),
       ];
     }
 
@@ -2116,17 +1725,27 @@ body[data-ds-dark-theme] .dsb-root {
      * @param {string} field - field name.
      * @param {unknown} value - stored value.
      * @param {Array} [columns] - the project's columns.
+     * @param {Array} [workspaces] - known workspaces, to name one.
      * @returns {string} text.
      */
-    function displayValue(field, value, columns) {
+    function displayValue(field, value, columns, workspaces) {
       if (value === null || value === undefined || value === '') return '空';
       if (field === 'priority') {
         return PRIORITIES.find((item) => item.id === value)?.label ?? String(value);
       }
       if (field === 'columnId') {
         const column = Array.isArray(columns) ? columns.find((item) => item.id === value) : null;
-        // The column can be gone: a card leaves it, then someone deletes it.
-        return column ? column.name : '已删除的列';
+        // Live cards always land on one of the five columns. The miss is a
+        // change-log entry written before the columns were fixed, still naming
+        // the id the card used to have.
+        return column ? column.name : '旧版看板';
+      }
+      if (field === 'needsHuman' || field === 'executing') return value === true ? '是' : '否';
+      if (field === 'workspaceId') {
+        const workspace = Array.isArray(workspaces)
+          ? workspaces.find((item) => item.id === value)
+          : null;
+        return workspace ? (workspace.title || workspace.path) : '已移除的工作区';
       }
       if (field === 'description') {
         const text = String(value).replace(/\s+/g, ' ').trim();
@@ -2157,16 +1776,259 @@ body[data-ds-dark-theme] .dsb-root {
       return sameYear ? `${day} ${clock}` : `${date.getFullYear()}-${day}`;
     }
 
+    /** Roughly how tall the calendar paints, used to decide which side it opens on. */
+    const CALENDAR_HEIGHT = 300;
+
+    /**
+     * Where to paint the calendar for a trigger: under it by default, above it
+     * when there is no room below. It is positioned against the viewport, so a
+     * drawer that scrolls underneath cannot drag the panel along with it.
+     * @param {HTMLElement} trigger - the date row that was clicked.
+     * @returns {{left: number, top: number, width: number}} viewport box.
+     */
+    function measureAt(trigger) {
+      const box = trigger.getBoundingClientRect();
+      const width = Math.max(box.width, 264);
+      const margin = 8;
+      const below = box.bottom + 6;
+      const above = box.top - CALENDAR_HEIGHT - 6;
+      const roomBelow = window.innerHeight - below - margin;
+      const roomAbove = box.top - margin;
+      let top;
+      if (roomBelow >= CALENDAR_HEIGHT) top = below;
+      else if (roomAbove >= CALENDAR_HEIGHT) top = above;
+      // Neither side fits whole. Open towards the roomier one and pin to the
+      // viewport edge, so the grid stays readable instead of being half cut
+      // off; on a window this short something has to give.
+      else if (roomBelow >= roomAbove) top = Math.max(margin, window.innerHeight - CALENDAR_HEIGHT - margin);
+      else top = margin;
+      const left = Math.min(
+        Math.max(margin, box.left),
+        Math.max(margin, window.innerWidth - width - margin),
+      );
+      return { left, top, width };
+    }
+
+    /** Column heads of the calendar grid, Monday first. */
+    const WEEKDAYS = ['一', '二', '三', '四', '五', '六', '日'];
+
+    /**
+     * One month, drawn from the board's own tokens. A native date input would
+     * have been shorter, but its popup is painted by the platform in the
+     * browser accent — a blue no token here reaches — so the grid is ours.
+     *
+     * Days are `<td>` with a `<button>` inside rather than buttons alone: a
+     * grid needs rows to keep the columns aligned, and the header stays in one
+     * line with the month label.
+     */
+    function Calendar({ value, onSelect }) {
+      const selected = fromISODate(value);
+      const [view, setView] = useState(() => {
+        const base = selected ?? new Date();
+        return { year: base.getFullYear(), month: base.getMonth() };
+      });
+
+      const todayIso = toISODate(new Date());
+      const first = new Date(view.year, view.month, 1);
+      const lead = (first.getDay() + 6) % 7;
+      const count = new Date(view.year, view.month + 1, 0).getDate();
+
+      const cells = [];
+      for (let pad = 0; pad < lead; pad += 1) cells.push(null);
+      for (let day = 1; day <= count; day += 1) cells.push(day);
+      while (cells.length % 7 !== 0) cells.push(null);
+      while (cells.length < 35) cells.push(null);
+
+      const rows = [];
+      for (let index = 0; index < cells.length; index += 7) rows.push(cells.slice(index, index + 7));
+
+      const step = (delta) => {
+        const next = new Date(view.year, view.month + delta, 1);
+        setView({ year: next.getFullYear(), month: next.getMonth() });
+      };
+
+      return h(
+        'div',
+        { className: 'dsb-cal' },
+        h(
+          'div',
+          { className: 'dsb-cal-head' },
+          h(
+            'span',
+            { className: 'dsb-cal-label', 'aria-live': 'polite' },
+            `${view.year}年${view.month + 1}月`,
+          ),
+          h(
+            'div',
+            { className: 'dsb-cal-nav' },
+            h(
+              'button',
+              {
+                type: 'button',
+                className: 'dsb-cal-prev',
+                onClick: () => step(-1),
+                title: '上个月',
+                'aria-label': '上个月',
+              },
+              h(ChevronLeftIcon, { size: 15 }),
+            ),
+            h(
+              'button',
+              {
+                type: 'button',
+                className: 'dsb-cal-next',
+                onClick: () => step(1),
+                title: '下个月',
+                'aria-label': '下个月',
+              },
+              h(ChevronRightIcon, { size: 15 }),
+            ),
+          ),
+        ),
+        h(
+          'table',
+          { className: 'dsb-cal-grid', role: 'grid' },
+          h(
+            'thead',
+            null,
+            h(
+              'tr',
+              null,
+              WEEKDAYS.map((label) =>
+                h('th', { key: label, className: 'dsb-cal-weekday', scope: 'col' }, label),
+              ),
+            ),
+          ),
+          h(
+            'tbody',
+            null,
+            rows.map((row, rowIndex) =>
+              h(
+                'tr',
+                { key: rowIndex },
+                row.map((day, index) => {
+                  if (day === null) return h('td', { key: index, className: 'dsb-cal-day' });
+                  const iso = toISODate(new Date(view.year, view.month, day));
+                  const classes = ['dsb-cal-day'];
+                  if (iso === value) classes.push('dsb-cal-selected');
+                  if (iso === todayIso) classes.push('dsb-cal-today');
+                  return h(
+                    'td',
+                    {
+                      key: index,
+                      className: classes.join(' '),
+                      'aria-selected': iso === value ? 'true' : undefined,
+                    },
+                    h(
+                      'button',
+                      {
+                        type: 'button',
+                        className: 'dsb-cal-daybtn',
+                        'data-day': iso,
+                        onClick: () => onSelect(iso),
+                      },
+                      day,
+                    ),
+                  );
+                }),
+              ),
+            ),
+          ),
+        ),
+        h(
+          'div',
+          { className: 'dsb-cal-actions' },
+          h(
+            'button',
+            { type: 'button', className: 'dsb-cal-action', onClick: () => onSelect(todayIso) },
+            '今天',
+          ),
+          value
+            ? h(
+                'button',
+                {
+                  type: 'button',
+                  className: 'dsb-cal-action',
+                  onClick: () => onSelect(null),
+                },
+                '清除',
+              )
+            : null,
+        ),
+      );
+    }
+
     /**
      * The card drawer: every field the board stores, and a delete that says what
      * it does. Edits save on blur, not on a Save button — a board has no draft
      * state, and a Save button would only exist to be forgotten.
      */
-    function CardDrawer({ card, project, closing, onClose, onChange, onMove, onDelete }) {
+    function CardDrawer({
+      card,
+      project,
+      closing,
+      workspaces,
+      onClose,
+      onChange,
+      onMove,
+      onRun,
+      onOpenSession,
+      onDelete,
+    }) {
       const [title, setTitle] = useState(card.title);
       const [description, setDescription] = useState(card.description ?? '');
       const [confirmDelete, setConfirmDelete] = useState(false);
+      /** Which date row, if any, has its calendar open. */
+      const [calendar, setCalendar] = useState(null);
+      /** Viewport box the open calendar paints at; `null` until it opens. */
+      const [popover, setPopover] = useState(null);
       const titleRef = useRef(null);
+      const panelRef = useRef(null);
+
+      const needsHuman = card.needsHuman === true;
+      const executing = card.executing === true;
+      /** The workspace this card would run in, once one is chosen. */
+      const runWorkspaceId = card.workspaceId ?? null;
+      const runWorkspace = workspaces.find((workspace) => workspace.id === runWorkspaceId) ?? null;
+
+      // The panel is anchored to the viewport, so anything that moves the
+      // drawer under it — scrolling, a resize — would leave it pointing at the
+      // wrong row. Closing it is the honest response to both.
+      useEffect(() => {
+        if (!calendar) return undefined;
+        const close = () => setCalendar(null);
+        window.addEventListener('resize', close);
+        window.addEventListener('scroll', close, true);
+        return () => {
+          window.removeEventListener('resize', close);
+          window.removeEventListener('scroll', close, true);
+        };
+      }, [calendar]);
+
+      // The calendar is a field, not a modal: a click anywhere else means the
+      // date was not being changed, so it closes. Escape closes it first and
+      // leaves the drawer open, because the drawer is the larger thing.
+      useEffect(() => {
+        if (!calendar) return undefined;
+        const onPointerDown = (event) => {
+          if (panelRef.current && panelRef.current.contains(event.target)) return;
+          const trigger = document.getElementById(calendar === 'start' ? 'dsb-start' : 'dsb-due');
+          if (trigger && trigger.contains(event.target)) return;
+          setCalendar(null);
+        };
+        const onKeyDown = (event) => {
+          if (event.key !== 'Escape') return;
+          event.preventDefault();
+          event.stopPropagation();
+          setCalendar(null);
+        };
+        document.addEventListener('mousedown', onPointerDown, true);
+        window.addEventListener('keydown', onKeyDown, true);
+        return () => {
+          document.removeEventListener('mousedown', onPointerDown, true);
+          window.removeEventListener('keydown', onKeyDown, true);
+        };
+      }, [calendar]);
 
       useEffect(() => {
         if (!card.title) titleRef.current?.focus();
@@ -2181,29 +2043,42 @@ body[data-ds-dark-theme] .dsb-root {
       };
 
       /**
-       * A native date input only opens its calendar from the small glyph at the
-       * right edge; anywhere else the click just focuses the field. Opening the
-       * picker on the field's own click makes the whole control behave like the
-       * button it looks like.
+       * A date row is a button that opens the board's own calendar. The
+       * platform picker was never an option: it paints its popup in the browser
+       * accent, a blue no token on this board reaches.
        */
-      const dateInput = (id, value, set) =>
-        h('input', {
-          id,
-          type: 'date',
-          className: 'dsb-control dsb-date',
-          value: value ?? '',
-          onClick: (event) => {
-            const input = event.currentTarget;
-            if (typeof input.showPicker !== 'function') return;
-            try {
-              input.showPicker();
-            } catch {
-              // Already open, or refused for lacking a user gesture: the field
-              // still works, it just needs the glyph clicked.
-            }
+      const dateField = (key, id, value) => {
+        const open = calendar === key;
+        return h(
+          'button',
+          {
+            id,
+            type: 'button',
+            className: 'dsb-control dsb-date-trigger',
+            'data-empty': value ? undefined : 'true',
+            'aria-expanded': open ? 'true' : 'false',
+            'aria-haspopup': 'dialog',
+            'aria-controls': open ? 'dsb-calendar' : undefined,
+            onClick: (event) => {
+              if (open) {
+                setCalendar(null);
+                return;
+              }
+              setPopover(measureAt(event.currentTarget));
+              setCalendar(key);
+            },
           },
-          onChange: (event) => set(event.target.value || null),
-        });
+          h('span', { className: 'dsb-date-value' }, formatDate(value)),
+          h('span', { className: 'dsb-date-mark' }, h(CalendarIcon, { size: 14 })),
+        );
+      };
+
+      const calendarValue = calendar === 'start' ? card.startDate : card.dueDate;
+      const pickDate = (iso) => {
+        const field = calendar === 'start' ? 'startDate' : 'dueDate';
+        setCalendar(null);
+        if ((iso ?? null) !== (calendarValue ?? null)) void onChange({ [field]: iso });
+      };
 
       return h(
         'aside',
@@ -2236,7 +2111,7 @@ body[data-ds-dark-theme] .dsb-root {
             ref: titleRef,
             className: 'dsb-title-input',
             value: title,
-            rows: 2,
+            rows: 1,
             placeholder: '卡片标题',
             'aria-label': '卡片标题',
             onChange: (event) => setTitle(event.target.value),
@@ -2249,9 +2124,38 @@ body[data-ds-dark-theme] .dsb-root {
               }
             },
           }),
+          // Waiting on a person is a property of the card, and launching work is
+          // the one thing here that cannot be undone by editing a field — both
+          // live in the footer, apart from the fields they do not describe.
+          card.executionNote
+            ? h('div', { className: 'dsb-warn' }, `上次执行：${card.executionNote}`)
+            : null,
           h(
             'div',
             { className: 'dsb-fields' },
+            h('label', { className: 'dsb-field-label', htmlFor: 'dsb-ws' }, '工作区'),
+            h(
+              'select',
+              {
+                id: 'dsb-ws',
+                className: 'dsb-control',
+                value: card.workspaceId ?? '',
+                disabled: card.executing === true,
+                onChange: (event) => void onChange({ workspaceId: event.target.value || null }),
+              },
+              h('option', { value: '' }, '未选择'),
+              // A workspace that has since been closed is still the honest
+              // answer for a card that was pointed at it, so it is kept as an
+              // option instead of silently falling back to "未选择".
+              workspaces.some((workspace) => workspace.id === card.workspaceId)
+                ? null
+                : card.workspaceId
+                  ? h('option', { value: card.workspaceId }, '已移除的工作区')
+                  : null,
+              workspaces.map((workspace) =>
+                h('option', { key: workspace.id, value: workspace.id }, workspace.title || workspace.path),
+              ),
+            ),
             h('label', { className: 'dsb-field-label', htmlFor: 'dsb-col' }, '状态'),
             h(
               'select',
@@ -2281,9 +2185,28 @@ body[data-ds-dark-theme] .dsb-root {
               ),
             ),
             h('label', { className: 'dsb-field-label', htmlFor: 'dsb-start' }, '开始'),
-            dateInput('dsb-start', card.startDate, (value) => void onChange({ startDate: value })),
+            dateField('start', 'dsb-start', card.startDate),
             h('label', { className: 'dsb-field-label', htmlFor: 'dsb-due' }, '截止'),
-            dateInput('dsb-due', card.dueDate, (value) => void onChange({ dueDate: value })),
+            dateField('due', 'dsb-due', card.dueDate),
+            calendar
+              ? h(
+                  'div',
+                  {
+                    id: 'dsb-calendar',
+                    className: 'dsb-cal-panel',
+                    role: 'dialog',
+                    'aria-label': calendar === 'start' ? '选择开始日期' : '选择截止日期',
+                    ref: panelRef,
+                    style: popover
+                      ? { left: `${popover.left}px`, top: `${popover.top}px`, width: `${popover.width}px` }
+                      : { left: '-9999px', top: '0px' },
+                  },
+                  // Keyed by row: switching from one date to the other should
+                  // open the calendar on that date's month, not on whichever
+                  // month the previous calendar was left showing.
+                  h(Calendar, { key: calendar, value: calendarValue, onSelect: pickDate }),
+                )
+              : null,
           ),
           h('textarea', {
             className: 'dsb-text',
@@ -2293,7 +2216,7 @@ body[data-ds-dark-theme] .dsb-root {
             onChange: (event) => setDescription(event.target.value),
             onBlur: commitDescription,
           }),
-          h(History, { history: card.history, columns: project.columns }),
+          h(History, { history: card.history, columns: project.columns, workspaces }),
         ),
         h(
           'div',
@@ -2323,17 +2246,86 @@ body[data-ds-dark-theme] .dsb-root {
                 'button',
                 {
                   type: 'button',
-                  className: 'dsb-btn',
-                  'data-tone': 'danger',
+                  className: 'dsb-trash-btn',
+                  'aria-label': '删除卡片',
+                  title: '删除卡片',
                   onClick: () => setConfirmDelete(true),
                 },
-                '删除卡片',
+                h(TrashIcon, { size: 15 }),
+              ),
+          confirmDelete
+            ? null
+            : h(
+                'div',
+                { className: 'dsb-foot-actions' },
+                h(
+                  'button',
+                  {
+                    type: 'button',
+                    className: 'dsb-flag-btn',
+                    'data-on': needsHuman ? 'true' : 'false',
+                    'aria-pressed': needsHuman ? 'true' : 'false',
+                    'aria-label': needsHuman ? '取消人工介入标记' : '标记为需要人工介入',
+                    title: needsHuman ? '取消人工介入标记' : '标记为需要人工介入',
+                    onClick: () => void onChange({ needsHuman: !needsHuman }),
+                  },
+                  h(PersonIcon, { size: 13 }),
+                  '人工介入',
+                ),
+                // A card that has run before keeps the session it ran in, so the
+                // useful action afterwards is going back to that conversation
+                // rather than starting a second one over the top of it.
+                executing || card.sessionId
+                  ? h(
+                      'span',
+                      {
+                        className: 'dsb-run-wrap',
+                        title: card.sessionId
+                          ? executing
+                            ? '会话正在处理这张卡片'
+                            : '打开上次执行的会话'
+                          : '会话还开着，稍等一下',
+                      },
+                      h(
+                        'button',
+                        {
+                          type: 'button',
+                          className: 'dsb-btn',
+                          'data-tone': 'primary',
+                          disabled: !card.sessionId,
+                          onClick: () => onOpenSession?.(card.sessionId),
+                        },
+                        h(OpenIcon, { size: 13 }),
+                        '打开会话',
+                      ),
+                    )
+                  : h(
+                      'span',
+                      {
+                        className: 'dsb-run-wrap',
+                        title: runWorkspace
+                          ? `在「${runWorkspace.title || runWorkspace.path}」新建会话执行`
+                          : '先选择一个工作区',
+                      },
+                      h(
+                        'button',
+                        {
+                          type: 'button',
+                          className: 'dsb-btn',
+                          'data-tone': 'primary',
+                          disabled: !runWorkspace,
+                          onClick: () => void onRun(runWorkspaceId),
+                        },
+                        h(PlayIcon, { size: 13 }),
+                        '开始执行',
+                      ),
+                    ),
               ),
         ),
       );
     }
 
-    /** The 18px glyph the sidebar row draws. */
+    /** The 18px glyph the sidebar row draws: Lucide `kanban`. */
     function BoardIcon(props) {
       const size = typeof props?.size === 'number' ? props.size : 18;
       const active = props?.active === true;
@@ -2344,45 +2336,26 @@ body[data-ds-dark-theme] .dsb-root {
           height: size,
           viewBox: '0 0 24 24',
           fill: 'none',
+          stroke: 'currentColor',
+          strokeWidth: 1.5,
+          strokeLinecap: 'round',
+          strokeLinejoin: 'round',
           'aria-hidden': true,
           style: { display: 'block' },
         },
-        h('rect', {
-          x: 3.5,
-          y: 4.5,
-          width: 5,
-          height: 15,
-          rx: 1.4,
-          stroke: 'currentColor',
-          strokeWidth: 1.5,
-          opacity: active ? 1 : 0.85,
-        }),
-        h('rect', {
-          x: 10.5,
-          y: 4.5,
-          width: 5,
-          height: 10,
-          rx: 1.4,
-          stroke: 'currentColor',
-          strokeWidth: 1.5,
-          opacity: active ? 1 : 0.85,
-        }),
-        h('rect', {
-          x: 17.5,
-          y: 4.5,
-          width: 3,
-          height: 6.5,
-          rx: 1.2,
-          stroke: 'currentColor',
-          strokeWidth: 1.5,
-          opacity: active ? 0.85 : 0.7,
-        }),
+        h('path', { d: 'M5 3v14', opacity: active ? 1 : 0.85 }),
+        h('path', { d: 'M12 3v8', opacity: active ? 1 : 0.85 }),
+        h('path', { d: 'M19 3v18', opacity: active ? 0.85 : 0.7 }),
       );
     }
 
     return {
       inject: ['slots'],
       apply(ctx) {
+        // Held for the drawer's "open the session" button: the services are
+        // resolved lazily on click, never cached at mount.
+        hostContext = ctx;
+
         // The stylesheet lives as long as the plugin does.
         if (typeof ctx.effect === 'function') ctx.effect(ensureStyles);
         else ensureStyles();

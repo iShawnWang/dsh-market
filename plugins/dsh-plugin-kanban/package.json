@@ -1,6 +1,6 @@
 {
   "name": "dsh-plugin-kanban",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "看板：一个纯 JSON 存储、无账号、无后端的 DSH 原生看板，左栏一个标签就是全部入口。",
   "license": "MIT",
   "type": "module",

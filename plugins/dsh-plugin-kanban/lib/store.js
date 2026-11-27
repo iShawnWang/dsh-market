@@ -7,10 +7,11 @@
  * board. Writes are serialized through a single promise chain, because two
  * concurrent read-modify-write cycles on the same file lose one of them.
  *
- * The shape is deliberately shallow: a list of projects, each owning its own
- * columns and cards. There is no cross-project table to join and no schema
- * version to migrate — a new field is just a new field, and a missing one
- * reads as its default.
+ * The shape is deliberately shallow: a list of projects, each owning its cards
+ * and a fixed set of columns. There is no cross-project table to join and no
+ * schema version to migrate — a new field is just a new field, and a missing
+ * one reads as its default. Columns are the one exception: they are defined by
+ * the code, not by the file, so every board has the same five lanes.
  */
 
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
@@ -22,34 +23,42 @@ import { randomUUID } from 'node:crypto';
 export const DEFAULT_DATA_FILE = join(homedir(), '.dsh', 'kanban', 'kanban.json');
 
 /**
- * Columns a brand-new board starts with.
+ * The board's columns. Fixed, in this order, with stable ids.
  *
- * `isFinal` marks the column where work ends: cards there render as done. It is
- * a per-column setting the user can move, not a property of a special column,
- * so no column is privileged over the others.
+ * A board is a workflow, and this one is a specific workflow: work arrives
+ * unplanned, gets picked up, then waits to be accepted before it is done. The
+ * columns are the shape of that flow, not a preference, so they are part of the
+ * schema rather than data — which is also why their ids are readable strings
+ * and not generated ones: the same board file always means the same five lanes,
+ * and a card's columnId can be read by eye.
+ *
+ * "Waiting for a human" is not a column. It is a property of the card, since it
+ * can happen to work at any stage — a card in 待办 can be stuck on a decision
+ * just as easily as one in 进行中 — and a column would force the card to leave
+ * the stage it is actually in to say so.
+ *
+ * `isFinal` marks the column where work ends: cards there render as done.
  */
-const DEFAULT_COLUMNS = [
-  { name: '待办', isFinal: false },
-  { name: '进行中', isFinal: false },
-  { name: '已完成', isFinal: true },
+export const COLUMNS = [
+  { id: 'backlog', name: '待规划', isFinal: false },
+  { id: 'todo', name: '待办', isFinal: false },
+  { id: 'doing', name: '进行中', isFinal: false },
+  { id: 'review', name: '待验收', isFinal: false },
+  { id: 'done', name: '已完成', isFinal: true },
 ];
 
 /** Priorities a card may carry; null means none. */
 export const PRIORITIES = ['urgent', 'high', 'medium', 'low'];
 
-/**
- * Accent colours a column may carry.
- *
- * The point of an accent is to make one column findable at a glance, so the set
- * stays small and each entry maps to a token the host already defines — a free
- * colour picker would let a board drift into unreadable combinations.
- */
-export const COLUMN_ACCENTS = ['blue', 'violet', 'green', 'amber', 'red'];
+/** Name of the lane that used to mean "waiting for a human". */
+const LEGACY_HUMAN_COLUMN = '需介入';
 
-/** Accent as stored: a known id, or null for "no accent". */
-export function normalizeAccent(value) {
-  return typeof value === 'string' && COLUMN_ACCENTS.includes(value) ? value : null;
-}
+/**
+ * How long a card may claim to be executing before the flag is considered
+ * abandoned. A host that dies mid-run leaves the flag set; without an expiry
+ * the card would look busy forever and refuse to start again.
+ */
+const EXECUTION_STALE_MS = 2 * 60 * 60 * 1000;
 
 /**
  * How many change-log entries one card keeps. A card edited a hundred times is
@@ -116,30 +125,47 @@ export function resolveDataFile(configured) {
 }
 
 /**
- * A fresh, valid document: one project with the three default columns.
+ * A fresh, valid document: one project with the fixed columns.
  * @returns {object} document.
  */
 export function emptyDocument() {
   const now = Date.now();
-  const columns = DEFAULT_COLUMNS.map((column) => ({
-    id: randomUUID(),
-    name: column.name,
-    isFinal: column.isFinal,
-    accent: null,
-  }));
   return {
     version: 1,
     projects: [
       {
         id: randomUUID(),
         name: '我的看板',
-        columns,
+        columns: COLUMNS.map((column) => ({ ...column })),
         cards: [],
         createdAt: now,
         updatedAt: now,
       },
     ],
   };
+}
+
+/**
+ * Where a card written by an older board lands.
+ *
+ * Columns used to be user data with generated ids, so a stored `columnId` means
+ * nothing now. A card whose old column was called 待办 keeps meaning 待办; every
+ * other one — a custom column, a deleted one — goes to 待规划, which is where
+ * unplanned work belongs anyway. Nothing is dropped: a card always has a home.
+ *
+ * 需介入 used to be a lane; it is now the `needsHuman` flag on a card. Cards
+ * that were parked there keep their intent: they come back as 待办 cards marked
+ * for a human, which is what that lane meant.
+ *
+ * @param {unknown} columnId - stored column id.
+ * @param {Map<string, string>} oldNames - old column id to old name.
+ * @returns {{ columnId: string, needsHuman: boolean }} placement.
+ */
+function placeCard(columnId, oldNames) {
+  const name = oldNames.get(String(columnId ?? ''));
+  if (name === LEGACY_HUMAN_COLUMN) return { columnId: 'todo', needsHuman: true };
+  const match = COLUMNS.find((column) => column.name === name);
+  return { columnId: match ? match.id : COLUMNS[0].id, needsHuman: false };
 }
 
 /**
@@ -155,23 +181,13 @@ export function normalize(value) {
   const projects = value.projects
     .filter((project) => project && typeof project === 'object')
     .map((project) => {
-      const columns = Array.isArray(project.columns) && project.columns.length > 0
-        ? project.columns
-            .filter((column) => column && typeof column === 'object')
-            .map((column) => ({
-              id: String(column.id ?? randomUUID()),
-              name: String(column.name ?? '未命名'),
-              isFinal: column.isFinal === true,
-              // An unknown accent reads as no accent: a colour the stylesheet
-              // has no rule for would otherwise paint nothing and look broken.
-              accent: normalizeAccent(column.accent),
-            }))
-        : [{ id: randomUUID(), name: '待办', isFinal: false, accent: null }];
-      // A project with no columns cannot hold a card, so the repair above is
-      // what lets a damaged document still open instead of showing an empty lane
-      // area with nowhere to drop anything.
+      const columns = COLUMNS.map((column) => ({ ...column }));
       const columnIds = new Set(columns.map((column) => column.id));
-      const fallbackColumn = columns[0]?.id ?? null;
+      const oldNames = new Map(
+        (Array.isArray(project.columns) ? project.columns : [])
+          .filter((column) => column && typeof column === 'object')
+          .map((column) => [String(column.id ?? ''), String(column.name ?? '')]),
+      );
       const cards = Array.isArray(project.cards)
         ? project.cards
             .filter((card) => card && typeof card === 'object')
@@ -195,15 +211,33 @@ export function normalize(value) {
                     .slice(-MAX_HISTORY)
                 : [];
               if (history.length === 0) history.push({ at: createdAt, field: 'created' });
+              // A card always lands in a column that exists: the ids above
+              // are the only ones the board knows.
+              const placement = columnIds.has(card.columnId)
+                ? { columnId: card.columnId, needsHuman: false }
+                : placeCard(card.columnId, oldNames);
+              // An execution flag left behind by a host that died mid-run must
+              // not keep a card spinning forever. Anything older than the
+              // staleness window is treated as gone.
+              const executing =
+                card.executing === true && Date.now() - Number(card.executionStartedAt ?? 0) < EXECUTION_STALE_MS;
               return {
                 id: String(card.id ?? randomUUID()),
                 number: Number.isFinite(card.number) ? card.number : 1,
                 title: String(card.title ?? ''),
                 description: String(card.description ?? ''),
-                // A card pointing at a deleted column lands in the first one
-                // rather than vanishing from the board.
-                columnId: columnIds.has(card.columnId) ? card.columnId : fallbackColumn,
+                columnId: placement.columnId,
                 priority: PRIORITIES.includes(card.priority) ? card.priority : null,
+                // "Waiting for a human" is a property of the card, not a lane,
+                // and it survives a move between columns.
+                needsHuman: card.needsHuman === true || placement.needsHuman,
+                // The workspace whose directory an execution session opens in.
+                workspaceId: typeof card.workspaceId === 'string' && card.workspaceId ? card.workspaceId : null,
+                // The session of the last execution, so the panel can jump to it.
+                sessionId: typeof card.sessionId === 'string' && card.sessionId ? card.sessionId : null,
+                executing,
+                executionStartedAt: executing ? Number(card.executionStartedAt) : null,
+                executionNote: typeof card.executionNote === 'string' ? card.executionNote : null,
                 startDate,
                 dueDate,
                 createdAt,
