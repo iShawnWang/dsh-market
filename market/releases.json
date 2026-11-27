@@ -152,5 +152,15 @@
       },
       "commit": "da76bdcae8fd7921d40e53b301bff4062aac748a"
     }
+  ],
+  "dsh-plugin-kanban": [
+    {
+      "version": "0.2.0",
+      "publishTimestamp": 1795771947,
+      "engines": {
+        "dsh": ">=0.2.2-rc.1 <0.3.0-0"
+      },
+      "commit": "909ed2cf3a3bacac0310684ccffcc5691fbcf67f"
+    }
   ]
 }
